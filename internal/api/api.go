@@ -3,6 +3,7 @@ package api
 import (
 	"io"
 	"net/http"
+	"log"
 
 	"github.com/Alena-Kurushkina/shortener/internal/repository"
 )
@@ -25,11 +26,13 @@ func NewShortener(repo *repository.Repository) *Shortener {
 }
 
 func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request){
+	log.Println("POST Request: ", req.URL, req.Method, req.Host )
 	body, err :=io.ReadAll(req.Body)
 	if err!=nil{
 		http.Error(res, "Can't read body", http.StatusBadRequest)
 		return
 	}	
+	log.Println("POST body: ", string(body) )
 	if req.Host!="localhost:8080"{
 		http.Error(res, "Hostname incorrect", http.StatusBadRequest)
 		return
@@ -42,15 +45,24 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 	res.Header().Set("content-type", "text/plain")
 	res.WriteHeader(http.StatusCreated)
 	res.Write([]byte("EwHXdJfB"))
+	log.Println("POST response: ", "EwHXdJfB" )
 }
 
 func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request){
+	log.Println("GET Request: ", req.URL, req.Method, req.Host )
 	param:=req.PathValue("id")
 	if param==""{
 		http.Error(res, "Bad parameters", http.StatusBadRequest)
 		return
 	}
+	repoOutput:=sh.repository.Select(param)
+	if len(repoOutput)==0{
+		http.Error(res, "Full string is not found", http.StatusBadRequest)
+		return
+	}
 	res.Header().Set("content-type", "text/plain")
+	res.Header().Set("Location", repoOutput)
 	res.WriteHeader(http.StatusTemporaryRedirect)
-	res.Write([]byte(sh.repository.Select(param)))
+
+	log.Println("GET Response: ", repoOutput )
 }
