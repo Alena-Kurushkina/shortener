@@ -31,4 +31,4 @@ git fetch template && git checkout template/main .github
 
 Подробнее про локальный и автоматический запуск читайте в [README автотестов](https://github.com/Yandex-Practicum/go-autotests).
 
-shortenertest -test.v -test.run=^TestIteration1$ -binary-path=shortener\cmd\shortener\shortener -source-path=.
+shortenertest -test.v -test.run=^TestIteration1$ -binary-path=shortener -source-path=shortener

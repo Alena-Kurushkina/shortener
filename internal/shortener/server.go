@@ -23,8 +23,8 @@ func NewServer() *Server{
 
 func NewRouter(hi api.HandlerInterface) http.Handler {
 	mux:=http.NewServeMux()
-	mux.HandleFunc(`POST /`, hi.CreateShortening)
-	mux.HandleFunc(`GET /{id}`, hi.GetFullString)
+	mux.HandleFunc("/", hi.HandleRequest)
+	// mux.HandleFunc("/{id}/", hi.GetFullString)
 	return mux
 }
 
