@@ -33,10 +33,6 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 		return
 	}	
 	log.Println("POST body: ", string(body) )
-	if req.Host!="localhost:8080"{
-		http.Error(res, "Hostname incorrect", http.StatusBadRequest)
-		return
-	}
 	if len(body)==0{
 		http.Error(res, "Body is empty", http.StatusBadRequest)
 		return
