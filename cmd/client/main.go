@@ -57,7 +57,7 @@ func main() {
     // и печатаем его
     fmt.Println(string(body))
 
-    getrequest, err := http.NewRequest(http.MethodGet, endpoint+"/"+string(body), nil)
+    getrequest, err := http.NewRequest(http.MethodGet, endpoint+string(body), nil)
     if err != nil {
         panic(err)
     }
