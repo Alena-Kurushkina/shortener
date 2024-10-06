@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-    endpoint := "http://localhost:8080/"
+    endpoint := "http://localhost:8888/"
     // контейнер данных для запроса
     data := url.Values{}
     // приглашение в консоли
@@ -57,7 +57,9 @@ func main() {
     // и печатаем его
     fmt.Println(string(body))
 
-    getrequest, err := http.NewRequest(http.MethodGet, endpoint+string(body), nil)
+    splitResult:=strings.Split(string(body),"/")
+    shortening:=splitResult[len(splitResult)-1]
+    getrequest, err := http.NewRequest(http.MethodGet, endpoint+shortening, nil)
     if err != nil {
         panic(err)
     }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Alena-Kurushkina/shortener/internal/config"
 	"github.com/Alena-Kurushkina/shortener/internal/repository"
 	"github.com/go-chi/chi/v5"
 )
@@ -19,11 +20,13 @@ type HandlerInterface interface {
 
 type Shortener struct {
 	repository *repository.Repository
+	config config.Config
 }
 
-func NewShortener(repo *repository.Repository) *Shortener {
+func NewShortener(repo *repository.Repository, cfg config.Config) *Shortener {
 	shortener:=Shortener{
 		repository: repo,
+		config: cfg,
 	}
 	return &shortener
 }
@@ -73,7 +76,7 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 	}	
 	sh.repository.Insert("EwHXdJfB", url)
 	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte("EwHXdJfB"))
+	res.Write([]byte(*sh.config.BaseUrl+"EwHXdJfB"))
 
 	log.Println("POST response: ", "EwHXdJfB" )
 }

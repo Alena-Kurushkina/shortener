@@ -7,9 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Alena-Kurushkina/shortener/internal/config"
 	"github.com/Alena-Kurushkina/shortener/internal/repository"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -179,7 +180,8 @@ func testRequest(t *testing.T, ts *httptest.Server, reqMethod,	path string, cont
 
 func TestRouter(t *testing.T){
 	repo:=repository.NewRepository()
-	sh:=NewShortener(repo)
+	config:=config.InitConfig()
+	sh:=NewShortener(repo,config)
 
 	r:=chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -204,9 +206,9 @@ func TestRouter(t *testing.T){
 		body    string
 		want    want
 	}{
-		{http.MethodPost, "positive create shortening test", "/", "text/plain", "http://site.ru", want{http.StatusCreated,"EwHXdJfB","text/plain",""}},
+		{http.MethodPost, "positive create shortening test", "/", "text/plain", "http://site.ru", want{http.StatusCreated,*config.BaseUrl+"EwHXdJfB","text/plain",""}},
 		{http.MethodPost, "negaitve create shortening test", "/", "text/plain", "", want{http.StatusBadRequest, "Body is empty", "text/plain",""}},
-		{http.MethodGet, "positive get full string test", "/EwHXdJfB","text/plain","",want{http.StatusTemporaryRedirect, "", "text/plain", "http://testsource.ru"}},
+		{http.MethodGet, "positive get full string test", "/EwHXdJfB","text/plain","",want{http.StatusTemporaryRedirect, "", "text/plain", "http://site.ru"}},
 		{http.MethodGet, "negative get full string test(full string is not found)", "/jfhdgt", "text/plain", "", want{ http.StatusBadRequest,"Full string is not found", "text/plain", ""}},
 		{http.MethodGet, "negative get full string test(no shortening specified)", "/", "text/plain", "", want{http.StatusMethodNotAllowed, "", "", ""}},
 		{http.MethodGet, "negative get full string test(incorrect path)", "/EwddTjks/path", "text/plain", "", want{http.StatusNotFound,"404 page not found","",""}},
