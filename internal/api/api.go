@@ -28,7 +28,6 @@ func NewShortener(repo *repository.Repository) *Shortener {
 }
 
 func(sh *Shortener) HandleRequest(res http.ResponseWriter, req *http.Request){
-	log.Println("Request:", req)
 	if req.Method==http.MethodPost {
 		sh.createShortening(res,req)
 	} else if req.Method==http.MethodGet {
@@ -44,18 +43,30 @@ func (sh *Shortener) createShortening(res http.ResponseWriter, req *http.Request
 	// 	log.Println("Request method unsupported", req.Method, req.URL)
 	// 	return
 	// }
-	log.Println("POST Request: ", req.URL, req.Method, req.Host )
-	body, err :=io.ReadAll(req.Body)
-	if err!=nil{
-		http.Error(res, "Can't read body", http.StatusBadRequest)
+	contentType := req.Header.Get("Content-Type")
+	log.Println("POST Request: ", req.URL, req.Method, req.Host, contentType )
+	var url = ""
+	if contentType == "application/x-www-form-urlencoded" {
+		req.ParseForm()
+		url = req.FormValue("url")
+	} else if strings.Contains(contentType,"text/plain") {
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			http.Error(res, "Can't read body", http.StatusBadRequest)
+			return
+		}
+		url=string(body)
+		// url = strings.TrimSuffix(string(urlBytes), "\n")
+	} else {
+		http.Error(res, "Invalid content type", http.StatusBadRequest)
 		return
-	}	
-	log.Println("POST body: ", string(body) )
-	if len(body)==0{
+	}
+	log.Println("POST body: ", url )
+	if len(url)==0{
 		http.Error(res, "Body is empty", http.StatusBadRequest)
 		return
 	}	
-	sh.repository.Insert("EwHXdJfB", string(body))
+	sh.repository.Insert("EwHXdJfB", url)
 	res.Header().Set("Content-Type", "text/plain")
 	res.WriteHeader(http.StatusCreated)
 	res.Write([]byte("EwHXdJfB"))

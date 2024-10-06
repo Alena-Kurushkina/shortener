@@ -24,22 +24,25 @@ func TestShortener_CreateShortening(t *testing.T) {
 	tests := []struct {
 		name    string
 		request string
+		contentType string
 		body    string
 		want    want
 	}{
 		{
 			name:    "positive create shortening test",
 			request: "/",
+			contentType: "text/plain; charset=utf-8",
 			body:    "http://site.ru",
 			want: want{
 				code:        http.StatusCreated,
-				response:    `EwHXdJfB`,
+				response:    "EwHXdJfB",
 				contentType: "text/plain",
 			},
 		},
 		{
 			name:    "negaitve create shortening test",
 			request: "/",
+			contentType: "text/plain",
 			body:    "",
 			want: want{
 				code:        http.StatusBadRequest,
@@ -51,6 +54,7 @@ func TestShortener_CreateShortening(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
+			request.Header.Add("Content-Type", test.contentType)
 			w := httptest.NewRecorder()
 			sh.HandleRequest(w, request)
 
