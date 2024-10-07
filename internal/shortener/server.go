@@ -1,7 +1,6 @@
 package shortener
 
 import (
-	"flag"
 	"log"
 	"net/http"
 
@@ -44,10 +43,8 @@ func NewRouter(hi api.HandlerInterface) chi.Router {
 }
 
 func (s *Server) Run() {	
-	flag.Parse()
-
-	log.Println("I am listening on ", *s.Config.ServerAddress)
-	err:=http.ListenAndServe(*s.Config.ServerAddress, s.Handler)
+	log.Println("Server is listening on ", s.Config.ServerAddress)
+	err:=http.ListenAndServe(s.Config.ServerAddress, s.Handler)
 	if err!=nil{
 		panic(err)
 	}

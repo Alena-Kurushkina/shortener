@@ -15,137 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// func TestShortener_CreateShortening(t *testing.T) {
-// 	repo := repository.NewRepository()
-// 	sh := NewShortener(repo)
-
-// 	type want struct {
-// 		code        int
-// 		response    string
-// 		contentType string
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		request string
-// 		contentType string
-// 		body    string
-// 		want    want
-// 	}{
-// 		{
-// 			name:    "positive create shortening test",
-// 			request: "/",
-// 			contentType: "text/plain; charset=utf-8",
-// 			body:    "http://site.ru",
-// 			want: want{
-// 				code:        http.StatusCreated,
-// 				response:    "EwHXdJfB",
-// 				contentType: "text/plain",
-// 			},
-// 		},
-// 		{
-// 			name:    "negaitve create shortening test",
-// 			request: "/",
-// 			contentType: "text/plain",
-// 			body:    "",
-// 			want: want{
-// 				code:        http.StatusBadRequest,
-// 				response:    "",
-// 				contentType: "text/plain",
-// 			},
-// 		},
-// 	}
-// 	for _, test := range tests {
-// 		t.Run(test.name, func(t *testing.T) {
-// 			request := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
-// 			request.Header.Add("Content-Type", test.contentType)
-// 			w := httptest.NewRecorder()
-// 			sh.CreateShortening(w, request)
-
-// 			res := w.Result()
-// 			assert.Equal(t, test.want.code, res.StatusCode, "Код статуса ответа не совпадает с ожидаемым")
-// 			if test.want.code == http.StatusBadRequest {
-// 				return
-// 			}
-// 			defer res.Body.Close()
-// 			resBody, err := io.ReadAll(res.Body)
-// 			require.NoError(t, err)
-// 			assert.Equal(t, test.want.response, string(resBody), "Тело ответа не совпадает с ожидаемым")
-// 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"), "Content-Type не совпадает с ожидаемым")
-// 		})
-// 	}
-// }
-
-// func TestShortener_GetFullString(t *testing.T) {
-// 	repo:=repository.Repository(map[string]string{"EwddTjks":"http://testsource.ru"})
-// 	// repo := repository.NewRepository()
-// 	sh := NewShortener(&repo)
-
-// 	type want struct {
-// 		code        int
-// 		location    string
-// 		contentType string
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		request string
-// 		body    string
-// 		want    want
-// 	}{
-// 		{
-// 			name:    "positive get full string test",
-// 			request: "/EwddTjks",
-// 			want: want{
-// 				code:        http.StatusTemporaryRedirect,
-// 				location:    "http://testsource.ru",
-// 				contentType: "text/plain",
-// 			},
-// 		},
-// 		{
-// 			name:    "negative get full string test(full string is not found)",
-// 			request: "/jfhdgt",
-// 			want: want{
-// 				code:        http.StatusBadRequest,
-// 				location:    "",
-// 				contentType: "",
-// 			},
-// 		},
-// 		{
-// 			name:    "negative get full string test(no shortening specified)",
-// 			request: "/",
-// 			want: want{
-// 				code:        http.StatusBadRequest,
-// 				location:    "",
-// 				contentType: "",
-// 			},
-// 		},
-// 		{
-// 			name:    "negative get full string test(incorrect path)",
-// 			request: "/EwddTjks/path",
-// 			want: want{
-// 				code:        http.StatusBadRequest,
-// 				location:    "",
-// 				contentType: "",
-// 			},
-// 		},
-// 	}
-// 	for _, test := range tests {
-// 		t.Run(test.name, func(t *testing.T) {
-// 			request := httptest.NewRequest(http.MethodGet, test.request, nil)
-// 			w := httptest.NewRecorder()
-// 			sh.GetFullString(w, request)
-
-// 			res := w.Result()
-// 			defer res.Body.Close()
-// 			assert.Equal(t, test.want.code, res.StatusCode, "Код статуса ответа не совпадает с ожидаемым")
-// 			if test.want.code == http.StatusBadRequest{
-// 				return
-// 			}
-// 			assert.Equal(t, test.want.location, res.Header.Get("Location"), "Тело ответа не совпадает с ожидаемым")
-// 			assert.Equal(t, test.want.contentType, res.Header.Get("Content-Type"), "Content-Type не совпадает с ожидаемым")
-// 		})
-// 	}
-// }
-
 type responseParams struct{
 	statusCode int 
 	location string
@@ -177,7 +46,6 @@ func testRequest(t *testing.T, ts *httptest.Server, reqMethod,	path string, cont
 	return rp
 }
 
-
 func TestRouter(t *testing.T){
 	repo:=repository.NewRepository()
 	config:=config.InitConfig()
@@ -189,6 +57,9 @@ func TestRouter(t *testing.T){
 	r.Get("/{id}",sh.GetFullString)
 
 	ts := httptest.NewServer(r)
+	ts.Client().CheckRedirect = func(req *http.Request, via []*http.Request) error {
+  		return http.ErrUseLastResponse
+	}
 	defer ts.Close()
 
 	type want struct {
@@ -198,24 +69,45 @@ func TestRouter(t *testing.T){
 		location string
 	}
 
-	tests := []struct {
+	type testData struct {
 		method string
 		name    string
 		path string
 		contentType string
 		body    string
 		want    want
-	}{
-		{http.MethodPost, "positive create shortening test", "/", "text/plain", "http://site.ru", want{http.StatusCreated,*config.BaseUrl+"EwHXdJfB","text/plain",""}},
+	}
+
+	t.Run("positive short and expand test", func(t *testing.T) {
+		testDataShort:=	testData{http.MethodPost,"", "/", "text/plain", "http://site.ru/somelongurl", want{http.StatusCreated, config.BaseUrl,"text/plain",""}}			
+		_=testDataShort.name
+		rp:=testRequest(t, ts, testDataShort.method, testDataShort.path, testDataShort.contentType, testDataShort.body)
+
+		splitResult:=strings.Split(string(rp.respBody),"/")
+		shortening:=splitResult[len(splitResult)-1]
+
+		assert.Equal(t, testDataShort.want.code, rp.statusCode, "Short URL: Код статуса ответа не совпадает с ожидаемым")			
+		assert.Contains(t, rp.respBody, testDataShort.want.response, "Short URL: Тело ответа не совпадает с ожидаемым")
+		assert.Contains(t, rp.contentType, testDataShort.want.contentType, "Short URL: Content-Type не совпадает с ожидаемым")
+		assert.Equal(t, testDataShort.want.location, rp.location, "Short URL: Location не совпадает с ожидаемым")		
+		
+		testDataExpand:=testData{http.MethodGet,"", "/" + shortening,"text/plain","",want{http.StatusTemporaryRedirect, "", "text/plain", "http://site.ru/somelongurl"}}
+		_=testDataExpand.name
+		rpGet:=testRequest(t, ts, testDataExpand.method, testDataExpand.path, testDataExpand.contentType, testDataExpand.body)
+		assert.Equal(t, testDataExpand.want.code, rpGet.statusCode, "Expand URL: Код статуса ответа не совпадает с ожидаемым")			
+		assert.Contains(t, rpGet.respBody, testDataExpand.want.response, "Expand URL: Тело ответа не совпадает с ожидаемым")
+		assert.Contains(t, rpGet.contentType, testDataExpand.want.contentType, "Expand URL: Content-Type не совпадает с ожидаемым")
+		assert.Equal(t, testDataExpand.want.location, rpGet.location, "Expand URL: Location не совпадает с ожидаемым")
+	})
+
+	tests := []testData {
 		{http.MethodPost, "negaitve create shortening test", "/", "text/plain", "", want{http.StatusBadRequest, "Body is empty", "text/plain",""}},
-		{http.MethodGet, "positive get full string test", "/EwHXdJfB","text/plain","",want{http.StatusTemporaryRedirect, "", "text/plain", "http://site.ru"}},
-		{http.MethodGet, "negative get full string test(full string is not found)", "/jfhdgt", "text/plain", "", want{ http.StatusBadRequest,"Full string is not found", "text/plain", ""}},
+		{http.MethodGet, "negative get full string test(full string is not found)", "/jfhdgt", "text/plain", "", want{ http.StatusBadRequest, "Full string is not found", "text/plain", ""}},
 		{http.MethodGet, "negative get full string test(no shortening specified)", "/", "text/plain", "", want{http.StatusMethodNotAllowed, "", "", ""}},
-		{http.MethodGet, "negative get full string test(incorrect path)", "/EwddTjks/path", "text/plain", "", want{http.StatusNotFound,"404 page not found","",""}},
+		{http.MethodGet, "negative get full string test(incorrect path)", "/EwddTjks/path", "text/plain", "", want{http.StatusNotFound, "404 page not found","",""}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-
 			rp:=testRequest(t, ts, test.method, test.path, test.contentType, test.body)
 
 			assert.Equal(t, test.want.code, rp.statusCode, "Код статуса ответа не совпадает с ожидаемым")			

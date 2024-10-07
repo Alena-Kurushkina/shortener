@@ -3,8 +3,10 @@ package api
 import (
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Alena-Kurushkina/shortener/internal/config"
 	"github.com/Alena-Kurushkina/shortener/internal/repository"
@@ -14,7 +16,6 @@ import (
 type HandlerInterface interface {
 	CreateShortening(res http.ResponseWriter, req *http.Request)
 	GetFullString(res http.ResponseWriter, req *http.Request)
-	// HandleRequest(res http.ResponseWriter, req *http.Request)
 }
 
 
@@ -31,24 +32,13 @@ func NewShortener(repo *repository.Repository, cfg config.Config) *Shortener {
 	return &shortener
 }
 
-// func(sh *Shortener) HandleRequest(res http.ResponseWriter, req *http.Request){
-// 	if req.Method==http.MethodPost {
-// 		sh.createShortening(res,req)
-// 	} else if req.Method==http.MethodGet {
-// 		sh.getFullString(res,req)
-// 	} else {
-// 		http.Error(res, "Request method unsupported", http.StatusBadRequest)
-// 	}
-// }
-
 func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request){
 	// if req.Method!=http.MethodPost{
 	// 	http.Error(res, "Request method unsupported", http.StatusBadRequest)
 	// 	log.Println("Request method unsupported", req.Method, req.URL)
 	// 	return
 	// }
-	contentType := req.Header.Get("Content-Type")
-	// log.Println("POST Request: ", req.URL, req.Method, req.Host, contentType )
+	contentType := req.Header.Get("Content-Type")	
 
 	res.Header().Set("Content-Type", "text/plain")
 
@@ -63,22 +53,21 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 			return
 		}
 		url=string(body)
-		// url = strings.TrimSuffix(string(urlBytes), "\n")
 	} else {
 		http.Error(res, "Invalid content type", http.StatusBadRequest)
 		return
 	}
-	log.Println("POST body: ", url )
+	// log.Println("POST body: ", url )
 
 	if len(url)==0{
 		http.Error(res, "Body is empty", http.StatusBadRequest)
 		return
-	}	
-	sh.repository.Insert("EwHXdJfB", url)
+	}
+	shortener:=generateRandomString(15)	
+	sh.repository.Insert(shortener, url)
 	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte(*sh.config.BaseUrl+"EwHXdJfB"))
-
-	log.Println("POST response: ", "EwHXdJfB" )
+	res.Write([]byte(sh.config.BaseUrl+shortener))
+	// log.Println("POST response: ", shortener )
 }
 
 func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request){
@@ -105,6 +94,17 @@ func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request){
 	res.Header().Set("Content-Type", "text/plain")
 	res.Header().Set("Location", repoOutput)
 	res.WriteHeader(http.StatusTemporaryRedirect)
+	// log.Println("GET Response: ", repoOutput )
+}
 
-	log.Println("GET Response: ", repoOutput )
+func generateRandomString(length int) string {
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    seed := rand.NewSource(time.Now().UnixNano())
+    random := rand.New(seed)
+
+    result := make([]byte, length)
+    for i := range result {
+        result[i] = charset[random.Intn(len(charset))]
+    }
+    return string(result)
 }
