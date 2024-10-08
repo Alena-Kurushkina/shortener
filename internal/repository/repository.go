@@ -24,5 +24,5 @@ func (r Repository) Select(key string) (string, error) {
 	if v, ok := r[key]; ok {
 		return v, nil
 	}
-	return "", fmt.Errorf("Can't find value of key")
+	return "", fmt.Errorf("can't find value of key")
 }
