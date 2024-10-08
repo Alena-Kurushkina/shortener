@@ -102,7 +102,7 @@ func TestRouter(t *testing.T){
 
 	tests := []testData {
 		{http.MethodPost, "negaitve create shortening test", "/", "text/plain", "", want{http.StatusBadRequest, "Body is empty", "text/plain",""}},
-		{http.MethodGet, "negative get full string test(full string is not found)", "/jfhdgt", "text/plain", "", want{ http.StatusBadRequest, "Full string is not found", "text/plain", ""}},
+		{http.MethodGet, "negative get full string test(full string is not found)", "/jfhdgt", "text/plain", "", want{ http.StatusBadRequest, "Can't find value of key", "text/plain", ""}},
 		{http.MethodGet, "negative get full string test(no shortening specified)", "/", "text/plain", "", want{http.StatusMethodNotAllowed, "", "", ""}},
 		{http.MethodGet, "negative get full string test(incorrect path)", "/EwddTjks/path", "text/plain", "", want{http.StatusNotFound, "404 page not found","",""}},
 	}

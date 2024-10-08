@@ -1,8 +1,9 @@
+// Package api implements handler functions for shorten long URL 
+// and expanding shortenings back to long URL
 package api
 
 import (
 	"io"
-	"log"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -13,17 +14,19 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// A HandlerInterface represent interface for shortening handler
 type HandlerInterface interface {
 	CreateShortening(res http.ResponseWriter, req *http.Request)
 	GetFullString(res http.ResponseWriter, req *http.Request)
 }
 
-
+// A Shortener aggregates helpfull elements 
 type Shortener struct {
 	repository *repository.Repository
 	config config.Config
 }
 
+// NewShortener returns new Shortener pointer initialized by repository and config
 func NewShortener(repo *repository.Repository, cfg config.Config) *Shortener {
 	shortener:=Shortener{
 		repository: repo,
@@ -32,16 +35,15 @@ func NewShortener(repo *repository.Repository, cfg config.Config) *Shortener {
 	return &shortener
 }
 
+// CreateShortening habdle POST HTTP request with long URL in body and retrieves base URL with shortening.
+// It handle only requests with content type application/x-www-form-urlencoded or text/plain.
+// Response body has content type text/plain.
 func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request){
-	// if req.Method!=http.MethodPost{
-	// 	http.Error(res, "Request method unsupported", http.StatusBadRequest)
-	// 	log.Println("Request method unsupported", req.Method, req.URL)
-	// 	return
-	// }
-	contentType := req.Header.Get("Content-Type")	
-
+	// set response content type
 	res.Header().Set("Content-Type", "text/plain")
-
+	
+	// parse request body
+	contentType := req.Header.Get("Content-Type")
 	var url = ""
 	if contentType == "application/x-www-form-urlencoded" {
 		req.ParseForm()
@@ -57,46 +59,48 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 		http.Error(res, "Invalid content type", http.StatusBadRequest)
 		return
 	}
-	// log.Println("POST body: ", url )
-
 	if len(url)==0{
 		http.Error(res, "Body is empty", http.StatusBadRequest)
 		return
 	}
+
+	// generate shortening
 	shortener:=generateRandomString(15)	
-	sh.repository.Insert(shortener, url)
+	if err:=sh.repository.Insert(shortener, url); err!=nil{
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// make response
 	res.WriteHeader(http.StatusCreated)
 	res.Write([]byte(sh.config.BaseUrl+shortener))
-	// log.Println("POST response: ", shortener )
 }
 
+// GetFullString handle GET request with shortening in URL parameter named id 
+// and makes response with long URL in header's location value.
+// Response content type is text/plain
 func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request){
-	// if req.Method!=http.MethodGet{
-	// 	http.Error(res, "Request method unsupported", http.StatusBadRequest)
-	// 	log.Println("Request method unsupported", req.Method, req.URL)
-	// 	return
-	// }
-	// log.Println("GET Request: ", req.Method, req.Host, req.URL )
-	// param:=strings.TrimPrefix(req.URL.Path, "/")
-	// param1:=req.PathValue("id")
-	// _=param1
+	// parse parameter id from URL
 	param:=chi.URLParam(req,"id")
 	if param==""{
-		log.Println("Empty parameter")
 		http.Error(res, "Bad parameters", http.StatusBadRequest)
 		return
 	}
-	repoOutput:=sh.repository.Select(param)
-	if len(repoOutput)==0{
-		http.Error(res, "Full string is not found", http.StatusBadRequest)
+
+	// get long URL from repository
+	repoOutput, err:=sh.repository.Select(param)
+	if err!=nil{
+		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// make responce
 	res.Header().Set("Content-Type", "text/plain")
 	res.Header().Set("Location", repoOutput)
 	res.WriteHeader(http.StatusTemporaryRedirect)
-	// log.Println("GET Response: ", repoOutput )
 }
 
+// generateRandomString returns string of random characters of passed length
 func generateRandomString(length int) string {
     const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     seed := rand.NewSource(time.Now().UnixNano())
@@ -106,5 +110,6 @@ func generateRandomString(length int) string {
     for i := range result {
         result[i] = charset[random.Intn(len(charset))]
     }
+
     return string(result)
 }
