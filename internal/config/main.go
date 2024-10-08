@@ -11,7 +11,7 @@ import (
 
 // A Config serves configuration variables
 type Config struct {
-	BaseUrl       string
+	BaseURL       string
 	ServerAddress string
 }
 
@@ -21,7 +21,7 @@ func InitConfig() *Config {
 
 	// define flags
 	flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "address of HTTP server")
-	flag.StringVar(&cfg.BaseUrl, "b", "http://localhost:8080", "base address of shorten URL")
+	flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080", "base address of shorten URL")
 
 	// parse flags
 	flag.Parse()
@@ -33,12 +33,12 @@ func InitConfig() *Config {
 	}
 	bu, exists := os.LookupEnv("BASE_URL")
 	if exists {
-		cfg.BaseUrl = bu
+		cfg.BaseURL = bu
 	}
 
-	// form BaseUrl variable
-	if cfg.BaseUrl[len(cfg.BaseUrl)-1:] != "/" {
-		cfg.BaseUrl = cfg.BaseUrl + "/"
+	// form BaseURL variable
+	if cfg.BaseURL[len(cfg.BaseURL)-1:] != "/" {
+		cfg.BaseURL = cfg.BaseURL + "/"
 	}
 
 	return &cfg

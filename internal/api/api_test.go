@@ -79,7 +79,7 @@ func TestRouter(t *testing.T) {
 	}
 
 	t.Run("positive short and expand test", func(t *testing.T) {
-		testDataShort := testData{http.MethodPost, "", "/", "text/plain", "http://site.ru/somelongurl", want{http.StatusCreated, config.BaseUrl, "text/plain", ""}}
+		testDataShort := testData{http.MethodPost, "", "/", "text/plain", "http://site.ru/somelongurl", want{http.StatusCreated, config.BaseURL, "text/plain", ""}}
 		_ = testDataShort.name
 		rp := testRequest(t, ts, testDataShort.method, testDataShort.path, testDataShort.contentType, testDataShort.body)
 

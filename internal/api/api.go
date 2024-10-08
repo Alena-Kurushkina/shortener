@@ -73,7 +73,7 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 
 	// make response
 	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte(sh.config.BaseUrl + shortener))
+	res.Write([]byte(sh.config.BaseURL + shortener))
 }
 
 // GetFullString handle GET request with shortening in URL parameter named id

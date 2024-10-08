@@ -65,11 +65,11 @@ func main() {
 	}
 	getrequest.Header.Add("Content-Type", "text/plain")
 	// отправляем запрос и получаем ответ
-	origUrlResponse, err := client.Do(getrequest)
+	origURLResponse, err := client.Do(getrequest)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Статус-код ", origUrlResponse.Status)
-	defer origUrlResponse.Body.Close()
-	fmt.Println("Header Location ", origUrlResponse.Header.Get("Location"))
+	fmt.Println("Статус-код ", origURLResponse.Status)
+	defer origURLResponse.Body.Close()
+	fmt.Println("Header Location ", origURLResponse.Header.Get("Location"))
 }
