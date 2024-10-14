@@ -1,19 +1,37 @@
 package api
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/Alena-Kurushkina/shortener/internal/config"
-	"github.com/Alena-Kurushkina/shortener/internal/repository"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Alena-Kurushkina/shortener/internal/config"
 )
+
+type DBMock struct {
+	db map[string]string
+}
+
+func (mock DBMock) Insert(key, value string) error {
+	mock.db[key] = value
+
+	return nil
+}
+
+func (mock DBMock) Select(key string) (string, error) {
+	if v, ok := mock.db[key]; ok {
+		return v, nil
+	}
+	return "", fmt.Errorf("can't find value of key")
+}
 
 type responseParams struct {
 	statusCode  int
@@ -47,7 +65,9 @@ func testRequest(t *testing.T, ts *httptest.Server, reqMethod, path string, cont
 }
 
 func TestRouter(t *testing.T) {
-	repo := repository.NewRepository()
+	repo := DBMock{
+		db: make(map[string]string),
+	}
 	config := config.InitConfig()
 	sh := NewShortener(repo, config)
 

@@ -9,28 +9,28 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Alena-Kurushkina/shortener/internal/config"
-	"github.com/Alena-Kurushkina/shortener/internal/repository"
 	"github.com/go-chi/chi/v5"
+
+	"github.com/Alena-Kurushkina/shortener/internal/config"
+	"github.com/Alena-Kurushkina/shortener/internal/shortener"
 )
 
-// A HandlerInterface represent interface for shortening handler
-type HandlerInterface interface {
-	CreateShortening(res http.ResponseWriter, req *http.Request)
-	GetFullString(res http.ResponseWriter, req *http.Request)
+type Storager interface {
+	Insert(key, value string) error
+	Select(key string) (string, error)
 }
 
 // A Shortener aggregates helpfull elements
 type Shortener struct {
-	repository *repository.Repository
-	config     *config.Config
+	repo   Storager
+	config *config.Config
 }
 
 // NewShortener returns new Shortener pointer initialized by repository and config
-func NewShortener(repo *repository.Repository, cfg *config.Config) *Shortener {
+func NewShortener(storage Storager, cfg *config.Config) shortener.Handler {
 	shortener := Shortener{
-		repository: repo,
-		config:     cfg,
+		repo:   storage,
+		config: cfg,
 	}
 	return &shortener
 }
@@ -65,15 +65,15 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 	}
 
 	// generate shortening
-	shortener := generateRandomString(15)
-	if err := sh.repository.Insert(shortener, url); err != nil {
+	shortStr := generateRandomString(15)
+	if err := sh.repo.Insert(shortStr, url); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// make response
 	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte(sh.config.BaseURL + shortener))
+	res.Write([]byte(sh.config.BaseURL + shortStr))
 }
 
 // GetFullString handle GET request with shortening in URL parameter named id
@@ -88,7 +88,7 @@ func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// get long URL from repository
-	repoOutput, err := sh.repository.Select(param)
+	repoOutput, err := sh.repo.Select(param)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
