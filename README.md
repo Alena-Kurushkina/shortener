@@ -34,3 +34,4 @@ git fetch template && git checkout template/main .github
 shortenertest -test.v -test.run=^TestIteration1$ -binary-path=shortener -source-path=shortener
 shortenertest -test.v -test.run=^TestIteration2$ -binary-path=shortener -source-path=../../internal/api
 shortenertest -test.v -test.run=^TestIteration3$ -binary-path=shortener -source-path=../../
+shortenertest -test.v -test.run=^TestIteration6$ -binary-path=shortener -server-port=8080 -source-path=../../

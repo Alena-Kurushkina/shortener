@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/Alena-Kurushkina/shortener/internal/config"
+	"github.com/Alena-Kurushkina/shortener/internal/logger"
 )
 
 // A Handler represent interface for shortening handler
@@ -29,8 +30,8 @@ func newRouter(hi Handler) chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
-	r.Post("/", hi.CreateShortening)
-	r.Get("/{id}", hi.GetFullString)
+	r.Post("/", logger.RequestWithLogging(hi.CreateShortening))
+	r.Get("/{id}", logger.ResponseWithLogging(hi.GetFullString))
 
 	return r
 }
