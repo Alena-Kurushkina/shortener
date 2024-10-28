@@ -3,6 +3,7 @@
 package api
 
 import (
+	"encoding/json"
 	"io"
 	"math/rand"
 	"net/http"
@@ -74,6 +75,58 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 	// make response
 	res.WriteHeader(http.StatusCreated)
 	res.Write([]byte(sh.config.BaseURL + shortStr))
+}
+
+type URLRequest struct {
+    URL      string      `json:"url"`
+}
+
+type ResultResponse struct {
+    Result      string      `json:"result"`
+}
+
+// CreateShorteningJSON handle POST HTTP request with long URL in body and retrieves base URL with shortening.
+// It handle only requests with content type application/json.
+// Response body has content type application/json.
+func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Request) {
+	// set response content type
+	res.Header().Set("Content-Type", "application/json")
+
+	// check content type
+	contentType := req.Header.Get("Content-Type")
+	if contentType != "application/json" && contentType != "application/x-gzip" {
+		http.Error(res, "Invalid content type", http.StatusBadRequest)
+		return
+	}
+
+	// decode request body
+	var url URLRequest
+	if err:=json.NewDecoder(req.Body).Decode(&url); err!=nil{
+		http.Error(res, "Can't read body", http.StatusBadRequest)
+		return
+	}	
+	if len(url.URL) == 0 {
+		http.Error(res, "Body is empty", http.StatusBadRequest)
+		return
+	}
+
+	// generate shortening
+	shortStr := generateRandomString(15)
+	if err := sh.repo.Insert(shortStr, url.URL); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// make response
+	responseData, err:=json.Marshal(ResultResponse{
+		Result: sh.config.BaseURL+shortStr,
+	})
+	if err != nil {
+        http.Error(res, err.Error(), http.StatusInternalServerError)
+        return
+    }
+	res.WriteHeader(http.StatusCreated)
+	res.Write(responseData)
 }
 
 // GetFullString handle GET request with shortening in URL parameter named id

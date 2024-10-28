@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/Alena-Kurushkina/shortener/internal/config"
@@ -17,6 +16,7 @@ import (
 type Handler interface {
 	CreateShortening(res http.ResponseWriter, req *http.Request)
 	GetFullString(res http.ResponseWriter, req *http.Request)
+	CreateShorteningJSON(res http.ResponseWriter, req *http.Request)
 }
 
 // A Server aggregates handler and config
@@ -28,10 +28,10 @@ type Server struct {
 // NewRouter creates new routes and middlewares
 func newRouter(hi Handler) chi.Router {
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
 
 	r.Post("/", logger.RequestWithLogging(hi.CreateShortening))
 	r.Get("/{id}", logger.ResponseWithLogging(hi.GetFullString))
+	r.Post("/api/shorten", logger.RequestWithLogging(hi.CreateShorteningJSON))
 
 	return r
 }
