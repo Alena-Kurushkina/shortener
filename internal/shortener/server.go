@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/Alena-Kurushkina/shortener/internal/config"
+	"github.com/Alena-Kurushkina/shortener/internal/compress"
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
 )
 
@@ -28,6 +29,7 @@ type Server struct {
 // NewRouter creates new routes and middlewares
 func newRouter(hi Handler) chi.Router {
 	r := chi.NewRouter()
+	r.Use(compress.GzipMiddleware)
 
 	r.Post("/", logger.RequestWithLogging(hi.CreateShortening))
 	r.Get("/{id}", logger.ResponseWithLogging(hi.GetFullString))
