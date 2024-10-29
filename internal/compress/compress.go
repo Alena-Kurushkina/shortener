@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/Alena-Kurushkina/shortener/internal/logger"
 )
 
 type compressWriter struct {
@@ -67,12 +69,13 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
-func GzipMiddleware(h http.Handler) http.Handler {
+func GzipMiddleware(h http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
 		ow:=w
 
 		supportsGzip:=strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
 		if supportsGzip {
+			logger.Log.Info("Create new compressWriter")
 			cw:=NewCompressWriter(w)
 			ow=cw
 			defer cw.Close()
@@ -80,6 +83,7 @@ func GzipMiddleware(h http.Handler) http.Handler {
 
 		sendsGzip:=strings.Contains(r.Header.Get("Content-Encoding"), "gzip")
 		if sendsGzip {
+			logger.Log.Info("Create new compressReader")
 			cr, err:=NewCompressReader(r.Body)
 			if err!=nil{
 				http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/Alena-Kurushkina/shortener/internal/config"
+	"github.com/Alena-Kurushkina/shortener/internal/logger"
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
 )
 
@@ -45,12 +46,26 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 
 	// parse request body
 	contentType := req.Header.Get("Content-Type")
-	var url = ""
+	// if !strings.Contains(contentType, "text/plain") && contentType != "application/x-gzip" {
+	// 	http.Error(res, "Invalid content type", http.StatusBadRequest)
+	// 	return
+	// }
+
+	logger.Log.Infoln(
+		"Content-Type ", contentType,
+	)
+
+	var url string
 	if contentType == "application/x-www-form-urlencoded" {
 		req.ParseForm()
 		url = req.FormValue("url")
-	} else if strings.Contains(contentType, "text/plain") {
+	} else if strings.Contains(contentType, "text/plain") {		
 		body, err := io.ReadAll(req.Body)
+
+		logger.Log.Infoln(			
+			"Request body ", body,
+		)
+
 		if err != nil {
 			http.Error(res, "Can't read body", http.StatusBadRequest)
 			return
@@ -78,11 +93,11 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 }
 
 type URLRequest struct {
-    URL      string      `json:"url"`
+	URL string `json:"url"`
 }
 
 type ResultResponse struct {
-    Result      string      `json:"result"`
+	Result string `json:"result"`
 }
 
 // CreateShorteningJSON handle POST HTTP request with long URL in body and retrieves base URL with shortening.
@@ -101,10 +116,10 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 
 	// decode request body
 	var url URLRequest
-	if err:=json.NewDecoder(req.Body).Decode(&url); err!=nil{
+	if err := json.NewDecoder(req.Body).Decode(&url); err != nil {
 		http.Error(res, "Can't read body", http.StatusBadRequest)
 		return
-	}	
+	}
 	if len(url.URL) == 0 {
 		http.Error(res, "Body is empty", http.StatusBadRequest)
 		return
@@ -118,13 +133,13 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 	}
 
 	// make response
-	responseData, err:=json.Marshal(ResultResponse{
-		Result: sh.config.BaseURL+shortStr,
+	responseData, err := json.Marshal(ResultResponse{
+		Result: sh.config.BaseURL + shortStr,
 	})
 	if err != nil {
-        http.Error(res, err.Error(), http.StatusInternalServerError)
-        return
-    }
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	res.WriteHeader(http.StatusCreated)
 	res.Write(responseData)
 }
