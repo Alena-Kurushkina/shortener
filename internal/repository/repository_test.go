@@ -16,7 +16,7 @@ func TestRouter(t *testing.T) {
 
 	rp.Insert("hgfdstrjti345", "http://iste.ru")
 
-	rp, err = NewRepository("C://shortener_storage_test.txt")
+	rp, err = NewRepository("C:\\shortener_storage_test.txt")
 	require.NoError(t, err)
 
 	val, err := rp.Select("hgfdstrjti345")
