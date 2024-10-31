@@ -8,9 +8,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Alena-Kurushkina/shortener/internal/config"
 	"github.com/Alena-Kurushkina/shortener/internal/compress"
-	_ "github.com/Alena-Kurushkina/shortener/internal/logger"
+	"github.com/Alena-Kurushkina/shortener/internal/config"
+	"github.com/Alena-Kurushkina/shortener/internal/logger"
 )
 
 // A Handler represent interface for shortening handler
@@ -29,11 +29,12 @@ type Server struct {
 // NewRouter creates new routes and middlewares
 func newRouter(hi Handler) chi.Router {
 	r := chi.NewRouter()
-	// r.Use(compress.GzipMiddleware)
+	r.Use(compress.GzipMiddleware)
+	r.Use(logger.LogMiddleware)
 
-	r.Post("/", compress.GzipMiddleware(hi.CreateShortening)) //logger.RequestWithLogging(
-	r.Get("/{id}", compress.GzipMiddleware(hi.GetFullString)) //logger.ResponseWithLogging
-	r.Post("/api/shorten", compress.GzipMiddleware(hi.CreateShorteningJSON)) //logger.RequestWithLogging(
+	r.Post("/", hi.CreateShortening)
+	r.Get("/{id}", hi.GetFullString)
+	r.Post("/api/shorten", hi.CreateShorteningJSON)
 
 	return r
 }

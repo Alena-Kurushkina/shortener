@@ -11,8 +11,9 @@ import (
 
 // A Config serves configuration variables
 type Config struct {
-	BaseURL       string
-	ServerAddress string
+	BaseURL         string
+	ServerAddress   string
+	FileStoragePath string
 }
 
 // InitConfig initialize configuration variables from flags values and environment variables
@@ -22,6 +23,7 @@ func InitConfig() *Config {
 	// define flags
 	flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "address of HTTP server")
 	flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080", "base address of shorten URL")
+	flag.StringVar(&cfg.FileStoragePath, "f", "C:\\shortener_storage", "path to storage file")
 
 	// parse flags
 	flag.Parse()
@@ -34,6 +36,10 @@ func InitConfig() *Config {
 	bu, exists := os.LookupEnv("BASE_URL")
 	if exists {
 		cfg.BaseURL = bu
+	}
+	fu, exists := os.LookupEnv("FILE_STORAGE_PATH")
+	if exists {
+		cfg.FileStoragePath = fu
 	}
 
 	// form BaseURL variable

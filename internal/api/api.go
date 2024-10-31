@@ -13,7 +13,6 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/Alena-Kurushkina/shortener/internal/config"
-	"github.com/Alena-Kurushkina/shortener/internal/logger"
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
 )
 
@@ -46,25 +45,13 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 
 	// parse request body
 	contentType := req.Header.Get("Content-Type")
-	// if !strings.Contains(contentType, "text/plain") && contentType != "application/x-gzip" {
-	// 	http.Error(res, "Invalid content type", http.StatusBadRequest)
-	// 	return
-	// }
-
-	logger.Log.Infoln(
-		"Content-Type ", contentType,
-	)
 
 	var url string
 	if contentType == "application/x-www-form-urlencoded" {
 		req.ParseForm()
 		url = req.FormValue("url")
-	} else if strings.Contains(contentType, "text/plain") {		
+	} else if strings.Contains(contentType, "text/plain") || strings.Contains(contentType, "application/x-gzip") {
 		body, err := io.ReadAll(req.Body)
-
-		logger.Log.Infoln(			
-			"Request body ", body,
-		)
 
 		if err != nil {
 			http.Error(res, "Can't read body", http.StatusBadRequest)
@@ -92,10 +79,12 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 	res.Write([]byte(sh.config.BaseURL + shortStr))
 }
 
+// A URLRequest is for request decode from json
 type URLRequest struct {
 	URL string `json:"url"`
 }
 
+// A ResultResponse is for response encode in json
 type ResultResponse struct {
 	Result string `json:"result"`
 }

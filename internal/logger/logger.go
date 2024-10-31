@@ -12,35 +12,18 @@ import (
 var Log *zap.SugaredLogger = zap.NewNop().Sugar()
 
 func Initialize() error {
-	zl, err:=zap.NewProduction()
-	if err!= nil{
+	zl, err := zap.NewProduction()
+	if err != nil {
 		return err
 	}
 
-	sugar:=zl.Sugar()
-	Log=sugar
+	sugar := zl.Sugar()
+	Log = sugar
 
 	return nil
 }
 
-func RequestWithLogging(h http.HandlerFunc) http.HandlerFunc {
-	logFn:=func(w http.ResponseWriter, r *http.Request){
-		start:= time.Now()
-
-		uri:=r.RequestURI
-		method:=r.Method
-
-		h.ServeHTTP(w,r)
-
-		duration:=time.Since(start)
-
-		logRequest(uri, method, duration)
-	}
-
-	return http.HandlerFunc(logFn)
-}
-
-func logRequest(uri, method string, duration time.Duration){
+func logRequest(uri, method string, duration time.Duration) {
 	Log.Infoln(
 		"uri", uri,
 		"method", method,
@@ -60,22 +43,33 @@ type (
 	}
 )
 
-func (r *loggingResponseWriter) Write(b []byte) (int, error){
-	size,err:=r.ResponseWriter.Write(b)
-	r.responseData.size+=size
-	return size,err
+func (r *loggingResponseWriter) Write(b []byte) (int, error) {
+	size, err := r.ResponseWriter.Write(b)
+	r.responseData.size += size
+	return size, err
 }
 
-func (r *loggingResponseWriter) WriteHeader(statusCode int){
+func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
-	r.responseData.code=statusCode
+	r.responseData.code = statusCode
 }
 
-func ResponseWithLogging(h http.HandlerFunc) http.HandlerFunc {
-	logFn:=func(w http.ResponseWriter, r *http.Request){
-		// start:= time.Now()
+func logResponse(code, size int) {
+	Log.Infoln(
+		"status code", code,
+		"size", size,
+	)
+}
 
-		lw:=loggingResponseWriter{
+// LogMiddleware realises middleware for logging requests and responses
+func LogMiddleware(h http.Handler) http.Handler {
+	logFn := func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		uri := r.RequestURI
+		method := r.Method
+
+		lw := loggingResponseWriter{
 			ResponseWriter: w,
 			responseData: &responseData{
 				code: 0,
@@ -83,19 +77,13 @@ func ResponseWithLogging(h http.HandlerFunc) http.HandlerFunc {
 			},
 		}
 
-		h.ServeHTTP(&lw,r)
+		h.ServeHTTP(&lw, r)
 
-		// duration:=time.Since(start)
+		duration := time.Since(start)
 
+		logRequest(uri, method, duration)
 		logResponse(lw.responseData.code, lw.responseData.size)
 	}
 
 	return http.HandlerFunc(logFn)
-}
-
-func logResponse(code, size int){
-	Log.Infoln(
-		"status code", code,
-		"size", size,
-	)
 }

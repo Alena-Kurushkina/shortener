@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	_ "encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,24 +16,8 @@ type resultResponse struct {
 }
 
 func main() {
-	endpointPost := "http://localhost:8080/api/shorten"
-	endpointGet := "http://localhost:8080/"
-	// контейнер данных для запроса
-	// data := url.Values{}
-	// приглашение в консоли
-	// fmt.Println("Введите длинный URL")
-	// // открываем потоковое чтение из консоли
-	// reader := bufio.NewReader(os.Stdin)
-	// // читаем строку из консоли
-	// long, err := reader.ReadString('\n')
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// long = strings.TrimSuffix(long, "\n")
-	// long = strings.TrimSuffix(long, "\r")
-
-	// заполняем контейнер данными
-	// data.Set("url", long)
+	endpointApi := "http://localhost:8080/api/shorten"
+	endpoint := "http://localhost:8080/"
 
 	// добавляем HTTP-клиент
 	client := &http.Client{
@@ -40,23 +25,23 @@ func main() {
 			return http.ErrUseLastResponse
 		}}
 
-	// пишем запрос
-	// запрос методом POST должен, помимо заголовков, содержать тело
-	// тело должно быть источником потокового чтения io.Reader
-	requestText, err := http.NewRequest(http.MethodPost, endpointGet, strings.NewReader(`http://ssite.ru`))
+	requestText, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(`http://ssite.ru`))
 	if err != nil {
 		panic(err)
 	}
 	// в заголовках запроса указываем кодировку
 	requestText.Header.Add("Content-Type", "text/plain")
-	// отправляем запрос и получаем ответ
+
+	//отправляем запрос и получаем ответ
 	response, err := client.Do(requestText)
 	if err != nil {
 		panic(err)
 	}
+
 	// выводим код ответа
 	fmt.Println("Статус-код ", response.Status)
 	defer response.Body.Close()
+
 	// читаем поток из тела ответа
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
@@ -67,26 +52,26 @@ func main() {
 
 	//-------------
 
-	request, err := http.NewRequest(http.MethodPost, endpointPost, strings.NewReader(`{"url": "http://some-site.ru"}`)) //strings.NewReader(data.Encode())
+	request, err := http.NewRequest(http.MethodPost, endpointApi, strings.NewReader(`{"url": "http://some-site.ru"}`))
 	if err != nil {
 		panic(err)
 	}
-	// в заголовках запроса указываем кодировку
+
 	request.Header.Add("Content-Type", "application/json")
-	// отправляем запрос и получаем ответ
+
+	// отправляем запрос
 	response, err = client.Do(request)
 	if err != nil {
 		panic(err)
 	}
-	// выводим код ответа
+
+	// ответ
 	fmt.Println("Статус-код ", response.Status)
 	defer response.Body.Close()
-	// читаем поток из тела ответа
 	body, err = io.ReadAll(response.Body)
 	if err != nil {
 		panic(err)
 	}
-	// и печатаем его
 	fmt.Println(string(body))
 
 	rr := resultResponse{}
@@ -97,12 +82,14 @@ func main() {
 
 	splitResult := strings.Split(string(rr.Result), "/")
 	shortening := splitResult[len(splitResult)-1]
-	getrequest, err := http.NewRequest(http.MethodGet, endpointGet+shortening, nil)
+
+	getrequest, err := http.NewRequest(http.MethodGet, endpoint+shortening, nil)
 	if err != nil {
 		panic(err)
 	}
 	getrequest.Header.Add("Content-Type", "text/plain")
-	// отправляем запрос и получаем ответ
+
+	// отправляем запрос
 	origURLResponse, err := client.Do(getrequest)
 	if err != nil {
 		panic(err)
@@ -115,34 +102,40 @@ func main() {
 
 	var requestBody bytes.Buffer
 
-	// Compress the request body
+	// запрос с компрессией
 	gz := gzip.NewWriter(&requestBody)
 	gz.Write([]byte("http://some-site-gzip.ru"))
 	gz.Close()
 
-	// Create an HTTP request with compressed body
-	req, err := http.NewRequest(http.MethodPost, endpointGet, &requestBody)
+	req, err := http.NewRequest(http.MethodPost, endpoint, &requestBody)
 	if err != nil {
 		panic(err)
 	}
 
-	// Set the Content-Encoding header to gzip
 	req.Header.Set("Content-Encoding", "gzip")
-	req.Header.Add("Content-Type", "text/plain")
+	req.Header.Set("Content-Type", "application/x-gzip")
+	req.Header.Set("Accept-Encoding", "gzip")
 
-	// Make the HTTP request
+	// отправить запрос
 	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)
 	}
+
+	// ответ
 	fmt.Println("Статус-код ", resp.Status)
 	defer resp.Body.Close()
-	
-	body, err = io.ReadAll(resp.Body)
+
+	reader, err := gzip.NewReader(resp.Body)
 	if err != nil {
 		panic(err)
 	}
-	// и печатаем его
-	fmt.Println(string(body))
+	defer reader.Close()
 
+	body, err = io.ReadAll(reader)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(body))
 }

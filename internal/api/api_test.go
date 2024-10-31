@@ -180,12 +180,12 @@ func TestRouterJSON(t *testing.T) {
 		_ = testDataShort.name
 		rp := testRequest(t, ts, testDataShort.method, testDataShort.path, testDataShort.contentType, testDataShort.body)
 
-		rr:=struct{
-			Result      string      `json:"result"`
+		rr := struct {
+			Result string `json:"result"`
 		}{}
-		err:=json.Unmarshal([]byte(rp.respBody), &rr)		
+		err := json.Unmarshal([]byte(rp.respBody), &rr)
 		require.NoError(t, err)
-		
+
 		splitResult := strings.Split(string(rr.Result), "/")
 		shortening := splitResult[len(splitResult)-1]
 

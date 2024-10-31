@@ -10,13 +10,16 @@ import (
 
 func main() {
 	cfg := config.InitConfig()
-	err:=logger.Initialize()
-	if err!=nil{
+	err := logger.Initialize()
+	if err != nil {
 		panic(err)
 	}
 	defer logger.Log.Sync()
 
-	repo := repository.NewRepository()
+	repo, err := repository.NewRepository(cfg.FileStoragePath)
+	if err != nil {
+		panic(err)
+	}
 
 	sh := api.NewShortener(repo, cfg)
 
