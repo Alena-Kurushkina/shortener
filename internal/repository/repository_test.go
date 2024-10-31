@@ -9,9 +9,9 @@ import (
 )
 
 func TestRouter(t *testing.T) {
-	rp, err := NewRepository("C://shortener_storage_test.txt")
+	rp, err := NewRepository("C:\\shortener_storage_test.txt")
 	require.NoError(t, err)
-	_, err = os.Stat("C://shortener_storage_test.txt")
+	_, err = os.Stat("C:\\shortener_storage_test.txt")
 	assert.NotEqual(t, os.ErrNotExist, err, "Файл для хранения сокращённых URL не существует")
 
 	rp.Insert("hgfdstrjti345", "http://iste.ru")

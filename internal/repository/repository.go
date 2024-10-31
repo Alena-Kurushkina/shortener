@@ -18,9 +18,9 @@ type Repository struct {
 
 // A record set data representation in file
 type record struct {
-	Uuid        uint   `json:"uuid"`
-	ShortUrl    string `json:"short_url"`
-	OriginalUrl string `json:"original_url"`
+	UUID        uint   `json:"uuid"`
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }
 
 // NewRepository initializes data storage
@@ -43,7 +43,7 @@ func NewRepository(filename string) (api.Storager, error) {
 		if err != nil {
 			return nil, err
 		}
-		rmap[record.ShortUrl] = record.OriginalUrl
+		rmap[record.ShortURL] = record.OriginalURL
 	}
 	if scanner.Err() != nil {
 		return nil, scanner.Err()
@@ -72,7 +72,7 @@ func (r Repository) Insert(key, value string) error {
 	writer := bufio.NewWriter(file)
 
 	// encode data
-	rec := record{Uuid: uint(len(r.db)), OriginalUrl: value, ShortUrl: key}
+	rec := record{UUID: uint(len(r.db)), OriginalURL: value, ShortURL: key}
 	data, err := json.Marshal(&rec)
 	if err != nil {
 		return err
