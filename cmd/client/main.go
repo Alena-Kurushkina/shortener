@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	_ "encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,7 +15,7 @@ type resultResponse struct {
 }
 
 func main() {
-	endpointApi := "http://localhost:8080/api/shorten"
+	endpointAPI := "http://localhost:8080/api/shorten"
 	endpoint := "http://localhost:8080/"
 
 	// добавляем HTTP-клиент
@@ -52,7 +51,7 @@ func main() {
 
 	//-------------
 
-	request, err := http.NewRequest(http.MethodPost, endpointApi, strings.NewReader(`{"url": "http://some-site.ru"}`))
+	request, err := http.NewRequest(http.MethodPost, endpointAPI, strings.NewReader(`{"url": "http://some-site.ru"}`))
 	if err != nil {
 		panic(err)
 	}
