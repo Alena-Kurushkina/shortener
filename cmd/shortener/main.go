@@ -3,13 +3,23 @@ package main
 import (
 	"github.com/Alena-Kurushkina/shortener/internal/api"
 	"github.com/Alena-Kurushkina/shortener/internal/config"
+	"github.com/Alena-Kurushkina/shortener/internal/logger"
 	"github.com/Alena-Kurushkina/shortener/internal/repository"
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
 )
 
 func main() {
 	cfg := config.InitConfig()
-	repo := repository.NewRepository()
+	err := logger.Initialize()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Log.Sync()
+
+	repo, err := repository.NewRepository(cfg.FileStoragePath)
+	if err != nil {
+		panic(err)
+	}
 
 	sh := api.NewShortener(repo, cfg)
 
