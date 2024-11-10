@@ -24,6 +24,23 @@ func main() {
 			return http.ErrUseLastResponse
 		}}
 
+	reqPing, err := http.NewRequest(http.MethodGet, endpoint+"ping", nil)
+	if err != nil {
+		panic(err)
+	}
+
+	//отправляем запрос и получаем ответ
+	resp, err := client.Do(reqPing)
+	if err != nil {
+		panic(err)
+	}
+
+	// выводим код ответа
+	fmt.Println("Статус-код ", resp.Status)
+	defer resp.Body.Close()
+
+	//-----------------
+
 	requestText, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(`http://ssite.ru`))
 	if err != nil {
 		panic(err)
@@ -116,7 +133,7 @@ func main() {
 	req.Header.Set("Accept-Encoding", "gzip")
 
 	// отправить запрос
-	resp, err := client.Do(req)
+	resp, err = client.Do(req)
 	if err != nil {
 		panic(err)
 	}

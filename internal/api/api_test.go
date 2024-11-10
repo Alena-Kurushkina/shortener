@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,18 +24,21 @@ type DBMock struct {
 	db map[string]string
 }
 
-func (mock DBMock) Insert(key, value string) error {
+func (mock DBMock) Insert(_ context.Context, key, value string) error {
 	mock.db[key] = value
 
 	return nil
 }
 
-func (mock DBMock) Select(key string) (string, error) {
+func (mock DBMock) Select(_ context.Context, key string) (string, error) {
 	if v, ok := mock.db[key]; ok {
 		return v, nil
 	}
 	return "", fmt.Errorf("can't find value of key")
 }
+
+func (mock DBMock) Close() {}
+func (mock DBMock) Ping(_ context.Context) error { return nil}
 
 type responseParams struct {
 	statusCode  int

@@ -3,6 +3,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"math/rand"
@@ -17,8 +18,10 @@ import (
 )
 
 type Storager interface {
-	Insert(key, value string) error
-	Select(key string) (string, error)
+	Insert(ctx context.Context, key, value string) error
+	Select(ctx context.Context, key string) (string, error)
+	Ping(ctx context.Context) error
+	Close()
 }
 
 // A Shortener aggregates helpfull elements
@@ -69,7 +72,7 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 
 	// generate shortening
 	shortStr := generateRandomString(15)
-	if err := sh.repo.Insert(shortStr, url); err != nil {
+	if err := sh.repo.Insert(req.Context(),shortStr, url); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -116,7 +119,7 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 
 	// generate shortening
 	shortStr := generateRandomString(15)
-	if err := sh.repo.Insert(shortStr, url.URL); err != nil {
+	if err := sh.repo.Insert(req.Context(),shortStr, url.URL); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -145,7 +148,7 @@ func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// get long URL from repository
-	repoOutput, err := sh.repo.Select(param)
+	repoOutput, err := sh.repo.Select(req.Context(),param)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
@@ -155,6 +158,19 @@ func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "text/plain")
 	res.Header().Set("Location", repoOutput)
 	res.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func (sh *Shortener) PingDB(res http.ResponseWriter, req *http.Request) {
+	
+	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
+    defer cancel()
+    if err := sh.repo.Ping(ctx); err != nil {
+        http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+    }
+
+	// make responce
+	res.WriteHeader(http.StatusOK)
 }
 
 // generateRandomString returns string of random characters of passed length
