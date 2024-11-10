@@ -6,6 +6,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"os"
 )
 
@@ -14,6 +15,7 @@ type Config struct {
 	BaseURL         string
 	ServerAddress   string
 	FileStoragePath string
+	ConnectionStr string
 }
 
 // InitConfig initialize configuration variables from flags values and environment variables
@@ -24,6 +26,7 @@ func InitConfig() *Config {
 	flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "address of HTTP server")
 	flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080", "base address of shorten URL")
 	flag.StringVar(&cfg.FileStoragePath, "f", "C:\\shortener_storage", "path to storage file")
+	flag.StringVar(&cfg.ConnectionStr, "d", fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", `127.0.0.1`, `practicum`, `123456`, `practicumdb`), "connection string to database")
 
 	// parse flags
 	flag.Parse()
@@ -40,6 +43,11 @@ func InitConfig() *Config {
 	fu, exists := os.LookupEnv("FILE_STORAGE_PATH")
 	if exists {
 		cfg.FileStoragePath = fu
+	}
+
+	du, exists := os.LookupEnv("DATABASE_DSN")
+	if exists {
+		cfg.ConnectionStr = du
 	}
 
 	// form BaseURL variable

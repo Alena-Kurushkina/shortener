@@ -3,6 +3,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"math/rand"
@@ -19,6 +20,8 @@ import (
 type Storager interface {
 	Insert(key, value string) error
 	Select(key string) (string, error)
+	Ping(ctx context.Context) error
+	Close()
 }
 
 // A Shortener aggregates helpfull elements
@@ -35,6 +38,8 @@ func NewShortener(storage Storager, cfg *config.Config) shortener.Handler {
 	}
 	return &shortener
 }
+
+
 
 // CreateShortening habdle POST HTTP request with long URL in body and retrieves base URL with shortening.
 // It handle only requests with content type application/x-www-form-urlencoded or text/plain.
@@ -169,4 +174,17 @@ func generateRandomString(length int) string {
 	}
 
 	return string(result)
+}
+
+func (sh *Shortener) PingDB(res http.ResponseWriter, req *http.Request) {
+	
+	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
+    defer cancel()
+    if err := sh.repo.Ping(ctx); err != nil {
+        http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+    }
+
+	// make responce
+	res.WriteHeader(http.StatusOK)
 }

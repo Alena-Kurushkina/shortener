@@ -18,6 +18,7 @@ type Handler interface {
 	CreateShortening(res http.ResponseWriter, req *http.Request)
 	GetFullString(res http.ResponseWriter, req *http.Request)
 	CreateShorteningJSON(res http.ResponseWriter, req *http.Request)
+	PingDB(res http.ResponseWriter, req *http.Request)
 }
 
 // A Server aggregates handler and config
@@ -34,6 +35,7 @@ func newRouter(hi Handler) chi.Router {
 
 	r.Post("/", hi.CreateShortening)
 	r.Get("/{id}", hi.GetFullString)
+	r.Get("/ping", hi.PingDB)
 	r.Post("/api/shorten", hi.CreateShorteningJSON)
 
 	return r

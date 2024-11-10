@@ -16,10 +16,11 @@ func main() {
 	}
 	defer logger.Log.Sync()
 
-	repo, err := repository.NewRepository(cfg.FileStoragePath)
+	repo, err := repository.NewRepository(cfg.ConnectionStr)
 	if err != nil {
 		panic(err)
 	}
+	defer repo.Close()
 
 	sh := api.NewShortener(repo, cfg)
 
