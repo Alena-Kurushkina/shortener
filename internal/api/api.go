@@ -19,6 +19,7 @@ import (
 
 type Storager interface {
 	Insert(ctx context.Context, key, value string) error
+	InsertBatch(_ context.Context, batch []BatchElement) error
 	Select(ctx context.Context, key string) (string, error)
 	Ping(ctx context.Context) error
 	Close()
@@ -94,7 +95,7 @@ type ResultResponse struct {
 
 // CreateShorteningJSON handle POST HTTP request with long URL in body and retrieves base URL with shortening.
 // It handle only requests with content type application/json.
-// Response body has content type application/json.
+// Response has content type application/json.
 func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Request) {
 	// set response content type
 	res.Header().Set("Content-Type", "application/json")
@@ -128,6 +129,64 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 	responseData, err := json.Marshal(ResultResponse{
 		Result: sh.config.BaseURL + shortStr,
 	})
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	res.WriteHeader(http.StatusCreated)
+	res.Write(responseData)
+}
+
+type BatchElement struct{
+	CorrelarionID string `json:"correlation_id"`
+	OriginalURL string `json:"original_url"`
+	ShortURL string `json:"short_url,omitempty"`
+}
+
+// type ResultResponseBatch struct {
+// 	CorrelationID string `json:"correlation_id"`
+// 	ShortURL string `json:"short_url"`
+// }
+
+// CreateShorteningJSONBatch handle POST HTTP request with set of long URLs in body and retrieves set of shortenings.
+// It handle only requests with content type application/json.
+// Response has content type application/json.
+func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *http.Request) {
+	// set response content type
+	res.Header().Set("Content-Type", "application/json")
+
+	// check content type
+	contentType := req.Header.Get("Content-Type")
+	if contentType != "application/json" && contentType != "application/x-gzip" {
+		http.Error(res, "Invalid content type", http.StatusBadRequest)
+		return
+	}
+
+	// decode request body
+	batch:=make([]BatchElement, 0, 10)
+	if err := json.NewDecoder(req.Body).Decode(&batch); err != nil {
+		http.Error(res, "Can't read body", http.StatusBadRequest)
+		return
+	}
+	if len(batch) == 0 {
+		http.Error(res, "Body is empty", http.StatusBadRequest)
+		return
+	}
+
+	for k, _:= range batch{
+		// generate shortening
+		batch[k].ShortURL=generateRandomString(15)
+	}
+	if err:=sh.repo.InsertBatch(req.Context(), batch); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// make response
+	for k, v:= range batch{
+		batch[k].ShortURL=sh.config.BaseURL+v.ShortURL
+	}
+	responseData, err := json.Marshal(batch)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return

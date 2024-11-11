@@ -59,6 +59,15 @@ func (r MemoryRepository) Insert(_ context.Context, key, value string) error {
 	return nil
 }
 
+// Insert adds data to storage
+func (r MemoryRepository) InsertBatch(_ context.Context, batch []api.BatchElement) error {
+	for _, v:=range batch{
+		r.db[v.ShortURL] = v.OriginalURL
+	}
+
+	return nil
+}
+
 // Select returns data from storage
 func (r MemoryRepository) Select(_ context.Context, key string) (string, error) {
 	if v, ok := r.db[key]; ok {
@@ -137,6 +146,26 @@ func (r DBRepository) Insert(ctx context.Context, key, value string) error {
 	return tx.Commit()
 }
 
+func (r DBRepository) InsertBatch(ctx context.Context, batch []api.BatchElement) error {
+	tx, err:=r.database.BeginTx(ctx, nil)
+	if err!=nil{
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, v :=range batch {
+		_, err=r.insertStmt.ExecContext(ctx,
+			v.OriginalURL,
+			v.ShortURL,
+		)
+		if err!=nil{
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
 func (rp *DBRepository) Close(){
 	rp.insertStmt.Close()
 	rp.selectStmt.Close()
@@ -208,6 +237,42 @@ type record struct {
 }
 
 // Insert adds data to storage
+func (r FileRepository) InsertBatch(_ context.Context, batch []api.BatchElement) error {
+	// open file
+	file, err := os.OpenFile(r.filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|os.O_APPEND, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+
+	for _, v := range batch {
+		r.db[v.ShortURL] = v.OriginalURL
+
+		// encode data
+		rec := record{UUID: uint(len(r.db)), OriginalURL: v.OriginalURL, ShortURL: v.ShortURL}
+		data, err := json.Marshal(&rec)
+		if err != nil {
+			return err
+		}
+		data = append(data, '\n')
+
+		// write data to buffer
+		if _, err := writer.Write(data); err != nil {
+			return err
+		}
+	}
+
+	// write buffer to file
+	if err = writer.Flush(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Insert adds data to storage
 func (r FileRepository) Insert(_ context.Context, key, value string) error {
 	// write data to local map
 	r.db[key] = value
@@ -227,14 +292,10 @@ func (r FileRepository) Insert(_ context.Context, key, value string) error {
 	if err != nil {
 		return err
 	}
+	data = append(data, '\n')
 
 	// write data to buffer
 	if _, err := writer.Write(data); err != nil {
-		return err
-	}
-
-	// go to next line
-	if err := writer.WriteByte('\n'); err != nil {
 		return err
 	}
 

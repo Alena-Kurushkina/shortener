@@ -37,4 +37,4 @@ shortenertest -test.v -test.run=^TestIteration9$ -binary-path=shortener -server-
 
 shortenertest -test.v -test.run=^TestIteration10$ -binary-path=shortener -server-port=8080 -source-path=cmd/ -database-dsn="host=127.0.0.1 user=practicum password=123456 dbname=practicumdb sslmode=disable"
 
-shortenertest -test.v -test.run=^TestIteration11$ -binary-path=shortener -server-port=8080 -source-path=cmd/ -file-storage-path=C:\Users\User\storage_shortener.txt -database-dsn="host=127.0.0.1 user=practicum password=123456 dbname=practicumdb sslmode=disable"
+shortenertest -test.v -test.run=^TestIteration11$ -binary-path=shortener -server-port=8080 -source-path=cmd/ -file-storage-path=/Users/alena/storage_shortener.txt -database-dsn="host=127.0.0.1 user=practicum password=123456 dbname=practicumdb sslmode=disable"
