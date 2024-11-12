@@ -30,6 +30,14 @@ func (mock DBMock) Insert(_ context.Context, key, value string) error {
 	return nil
 }
 
+func (mock DBMock) InsertBatch(_ context.Context, batch []BatchElement) error {
+	for _, v:=range batch{
+		mock.db[v.ShortURL] = v.OriginalURL
+	}
+
+	return nil
+}
+
 func (mock DBMock) Select(_ context.Context, key string) (string, error) {
 	if v, ok := mock.db[key]; ok {
 		return v, nil

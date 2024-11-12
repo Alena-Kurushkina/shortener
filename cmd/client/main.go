@@ -46,7 +46,7 @@ func main() {
 	fmt.Println("Статус-код ", resp.Status)
 	defer resp.Body.Close()
 
-	//-----------------
+	// //-----------------
 
 	requestText, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(`http://ssite.ru`))
 	if err != nil {
@@ -75,7 +75,7 @@ func main() {
 
 	//-------------
 
-	request, err := http.NewRequest(http.MethodPost, endpointAPI, strings.NewReader(`{"url": "http://some-site.ru"}`))
+	request, err := http.NewRequest(http.MethodPost, endpointAPI, strings.NewReader(`{"url": "http://ssgreh.ru"}`))
 	if err != nil {
 		panic(err)
 	}
@@ -152,7 +152,8 @@ func main() {
 	}
 
 	fmt.Println("Response body",rr1)
-	// --------
+	
+	//--------
 
 	var requestBody bytes.Buffer
 

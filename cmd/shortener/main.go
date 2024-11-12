@@ -8,6 +8,7 @@ import (
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
 	"github.com/Alena-Kurushkina/shortener/internal/repository"
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
+	_ "github.com/golang/mock/mockgen/model"
 )
 
 func main() {

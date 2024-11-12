@@ -3,7 +3,6 @@
 package shortener
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -53,7 +52,7 @@ func NewServer(hdl Handler, cfg *config.Config) *Server {
 
 // Run starts listening to server address and handling requests
 func (s *Server) Run() {
-	log.Println("Server is listening on ", s.Config.ServerAddress)
+	logger.Log.Infof("Server is listening on %s", s.Config.ServerAddress)
 	err := http.ListenAndServe(s.Config.ServerAddress, s.Handler)
 	if err != nil {
 		panic(err)
