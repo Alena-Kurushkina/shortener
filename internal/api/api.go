@@ -75,13 +75,13 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 
 	// generate shortening
 	shortStr := generateRandomString(15)
-	insertErr := sh.repo.Insert(req.Context(),shortStr, url)
+	insertErr := sh.repo.Insert(req.Context(), shortStr, url)
 
 	var existError *sherr.AlreadyExistError
-	if errors.As(insertErr, &existError){		
-		// make response		
-		res.WriteHeader(http.StatusConflict)	
-		res.Write([]byte(sh.config.BaseURL + existError.ExistShortStr))	
+	if errors.As(insertErr, &existError) {
+		// make response
+		res.WriteHeader(http.StatusConflict)
+		res.Write([]byte(sh.config.BaseURL + existError.ExistShortStr))
 
 		return
 	} else if insertErr != nil {
@@ -131,10 +131,10 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 
 	// generate shortening
 	shortStr := generateRandomString(15)
-	insertErr := sh.repo.Insert(req.Context(),shortStr, url.URL)
+	insertErr := sh.repo.Insert(req.Context(), shortStr, url.URL)
 
 	var existError *sherr.AlreadyExistError
-	if errors.As(insertErr, &existError){
+	if errors.As(insertErr, &existError) {
 		// make response
 		responseData, err := json.Marshal(ResultResponse{
 			Result: sh.config.BaseURL + existError.ExistShortStr,
@@ -144,9 +144,9 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 			return
 		}
 		// make response
-		res.WriteHeader(http.StatusConflict)	
-		res.Write(responseData)				
-		//res.Write([]byte(sh.config.BaseURL + existError.ExistShortStr))	
+		res.WriteHeader(http.StatusConflict)
+		res.Write(responseData)
+		//res.Write([]byte(sh.config.BaseURL + existError.ExistShortStr))
 
 		return
 	} else if insertErr != nil {
@@ -167,10 +167,10 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 }
 
 // A BatchElement represent structure to marshal element of request`s json array
-type BatchElement struct{
+type BatchElement struct {
 	CorrelarionID string `json:"correlation_id"`
-	OriginalURL string `json:"original_url"`
-	ShortURL string `json:"short_url,omitempty"`
+	OriginalURL   string `json:"original_url"`
+	ShortURL      string `json:"short_url,omitempty"`
 }
 
 // CreateShorteningJSONBatch handle POST HTTP request with set of long URLs in body and retrieves set of shortenings.
@@ -188,7 +188,7 @@ func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *htt
 	}
 
 	// decode request body
-	batch:=make([]BatchElement, 0, 10)
+	batch := make([]BatchElement, 0, 10)
 	if err := json.NewDecoder(req.Body).Decode(&batch); err != nil {
 		http.Error(res, "Can't read body", http.StatusBadRequest)
 		return
@@ -198,18 +198,18 @@ func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *htt
 		return
 	}
 	// generate shortening
-	for k, _:= range batch{
-		batch[k].ShortURL=generateRandomString(15)
+	for k, _ := range batch {
+		batch[k].ShortURL = generateRandomString(15)
 	}
 	// write to data storage
-	if err:=sh.repo.InsertBatch(req.Context(), batch); err != nil {
+	if err := sh.repo.InsertBatch(req.Context(), batch); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// make response
-	for k, v:= range batch{
-		batch[k].ShortURL=sh.config.BaseURL+v.ShortURL
+	for k, v := range batch {
+		batch[k].ShortURL = sh.config.BaseURL + v.ShortURL
 	}
 	responseData, err := json.Marshal(batch)
 	if err != nil {
@@ -232,7 +232,7 @@ func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// get long URL from repository
-	repoOutput, err := sh.repo.Select(req.Context(),param)
+	repoOutput, err := sh.repo.Select(req.Context(), param)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
@@ -246,13 +246,13 @@ func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 
 // PingDB check connection to data storage
 func (sh *Shortener) PingDB(res http.ResponseWriter, req *http.Request) {
-	
+
 	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
-    defer cancel()
-    if err := sh.repo.Ping(ctx); err != nil {
-        http.Error(res, err.Error(), http.StatusInternalServerError)
+	defer cancel()
+	if err := sh.repo.Ping(ctx); err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
-    }
+	}
 
 	// make responce
 	res.WriteHeader(http.StatusOK)

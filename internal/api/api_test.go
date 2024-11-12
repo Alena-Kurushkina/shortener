@@ -31,7 +31,7 @@ func (mock DBMock) Insert(_ context.Context, key, value string) error {
 }
 
 func (mock DBMock) InsertBatch(_ context.Context, batch []BatchElement) error {
-	for _, v:=range batch{
+	for _, v := range batch {
 		mock.db[v.ShortURL] = v.OriginalURL
 	}
 
@@ -45,8 +45,8 @@ func (mock DBMock) Select(_ context.Context, key string) (string, error) {
 	return "", fmt.Errorf("can't find value of key")
 }
 
-func (mock DBMock) Close() {}
-func (mock DBMock) Ping(_ context.Context) error { return nil}
+func (mock DBMock) Close()                       {}
+func (mock DBMock) Ping(_ context.Context) error { return nil }
 
 type responseParams struct {
 	statusCode  int

@@ -10,9 +10,9 @@ import (
 	"os"
 
 	"github.com/Alena-Kurushkina/shortener/internal/api"
-	"github.com/Alena-Kurushkina/shortener/internal/sherr"
 	"github.com/Alena-Kurushkina/shortener/internal/config"
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
+	"github.com/Alena-Kurushkina/shortener/internal/sherr"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -24,22 +24,22 @@ type FileRepository struct {
 
 // A MemoryRepository represents a memory data storage
 type MemoryRepository struct {
-	db       map[string]string
+	db map[string]string
 }
 
 // A DBRepository store data in database
 type DBRepository struct {
-	database *sql.DB
+	database   *sql.DB
 	selectStmt *sql.Stmt
 }
 
-// NewRepository defines data storage depending on passed config parameters 
-func NewRepository(ctx context.Context, config *config.Config) (api.Storager, error){
-	if config.ConnectionStr!="" {
+// NewRepository defines data storage depending on passed config parameters
+func NewRepository(ctx context.Context, config *config.Config) (api.Storager, error) {
+	if config.ConnectionStr != "" {
 		logger.Log.Info("Database is used as data storage")
 		return newDBRepository(ctx, config.ConnectionStr)
 	}
-	if config.FileStoragePath!=""{
+	if config.FileStoragePath != "" {
 		logger.Log.Info("File is used as data storage")
 		return newFileRepository(config.FileStoragePath)
 	}
@@ -48,7 +48,7 @@ func NewRepository(ctx context.Context, config *config.Config) (api.Storager, er
 }
 
 // newMemoryRepository initializes data storage in memory
-func newMemoryRepository() (api.Storager, error){
+func newMemoryRepository() (api.Storager, error) {
 	db := MemoryRepository{
 		db: make(map[string]string),
 	}
@@ -64,7 +64,7 @@ func (r MemoryRepository) Insert(_ context.Context, key, value string) error {
 
 // InsertBatch adds array of data to storage
 func (r MemoryRepository) InsertBatch(_ context.Context, batch []api.BatchElement) error {
-	for _, v:=range batch{
+	for _, v := range batch {
 		r.db[v.ShortURL] = v.OriginalURL
 	}
 
@@ -79,21 +79,21 @@ func (r MemoryRepository) Select(_ context.Context, key string) (string, error) 
 	return "", fmt.Errorf("can't find value of key")
 }
 
-func (rp *MemoryRepository) Close(){}
+func (rp *MemoryRepository) Close() {}
 
-func (rp *MemoryRepository) Ping(_ context.Context) error{ return nil }
+func (rp *MemoryRepository) Ping(_ context.Context) error { return nil }
 
 // newDBRepository initializes data storage in database
 func newDBRepository(ctx context.Context, connectionStr string) (api.Storager, error) {
 
-	db,err:=sql.Open("pgx", connectionStr)
-	if err!=nil{
+	db, err := sql.Open("pgx", connectionStr)
+	if err != nil {
 		return nil, err
 	}
 	logger.Log.Info("DB connection opened")
 
-	tx, err:=db.BeginTx(ctx,nil)
-	if err!=nil{
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
@@ -108,17 +108,17 @@ func newDBRepository(ctx context.Context, connectionStr string) (api.Storager, e
 		CREATE UNIQUE INDEX IF NOT EXISTS short_idx on shortening (shortURL);
 	`)
 
-	err=tx.Commit()
-	if err!=nil{
+	err = tx.Commit()
+	if err != nil {
 		return nil, err
 	}
 
-	stmt1, err:=db.PrepareContext(ctx, `
+	stmt1, err := db.PrepareContext(ctx, `
 		SELECT originalURL 
 		FROM shortening 
 		WHERE shortURL LIKE $1
 	`)
-	if err!=nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -127,13 +127,13 @@ func newDBRepository(ctx context.Context, connectionStr string) (api.Storager, e
 
 // Insert adds data to storage
 func (r DBRepository) Insert(ctx context.Context, insertedShortURL, insertedOriginalURL string) error {
-	tx, err:=r.database.BeginTx(ctx, nil)
-	if err!=nil{
+	tx, err := r.database.BeginTx(ctx, nil)
+	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	sqlRow:=tx.QueryRowContext(ctx,
+	sqlRow := tx.QueryRowContext(ctx,
 		`INSERT INTO shortening (originalURL, shortURL) 
 		VALUES ($1, $2) 
 		ON CONFLICT (originalurl) 
@@ -145,14 +145,14 @@ func (r DBRepository) Insert(ctx context.Context, insertedShortURL, insertedOrig
 
 	var (
 		dbOriginalURL string
-		dbShortURL string
+		dbShortURL    string
 	)
-	err=sqlRow.Scan(&dbOriginalURL, &dbShortURL)
-	if err!=nil{
+	err = sqlRow.Scan(&dbOriginalURL, &dbShortURL)
+	if err != nil {
 		return err
 	}
 
-	if dbShortURL!=insertedShortURL{
+	if dbShortURL != insertedShortURL {
 		tx.Rollback()
 		return sherr.NewAlreadyExistError(insertedOriginalURL, dbShortURL)
 	}
@@ -162,54 +162,54 @@ func (r DBRepository) Insert(ctx context.Context, insertedShortURL, insertedOrig
 
 // InsertBatch adds array of data to storage
 func (r DBRepository) InsertBatch(ctx context.Context, batch []api.BatchElement) error {
-	tx, err:=r.database.BeginTx(ctx, nil)
-	if err!=nil{
+	tx, err := r.database.BeginTx(ctx, nil)
+	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	stmt, err:=tx.PrepareContext(ctx, `
+	stmt, err := tx.PrepareContext(ctx, `
 		INSERT INTO shortening (originalURL, shortURL) 
 		VALUES ($1, $2) 
 		ON CONFLICT (originalurl) 
 			DO UPDATE SET originalurl = shortening.originalurl
 		RETURNING originalurl, shorturl;
 	`)
-	if err!=nil{
+	if err != nil {
 		return err
 	}
 
-	for _, v :=range batch {
-		_, err=stmt.ExecContext(ctx,
+	for _, v := range batch {
+		_, err = stmt.ExecContext(ctx,
 			v.OriginalURL,
 			v.ShortURL,
 		)
-		if err!=nil{
+		if err != nil {
 			return err
-		}	
+		}
 	}
 
 	return tx.Commit()
 }
 
-func (rp *DBRepository) Close(){
+func (rp *DBRepository) Close() {
 	rp.selectStmt.Close()
 	rp.database.Close()
 }
 
-func (rp *DBRepository) Ping(ctx context.Context) error{
+func (rp *DBRepository) Ping(ctx context.Context) error {
 	return rp.database.PingContext(ctx)
 }
 
 // Select returns data from storage
 func (r DBRepository) Select(ctx context.Context, key string) (string, error) {
-	row:=r.selectStmt.QueryRowContext(ctx,
+	row := r.selectStmt.QueryRowContext(ctx,
 		key,
 	)
 	var longURL string
 
-	err:=row.Scan(&longURL)
-	if err!=nil{
+	err := row.Scan(&longURL)
+	if err != nil {
 		return "", err
 	}
 
@@ -250,9 +250,9 @@ func newFileRepository(filename string) (api.Storager, error) {
 	return &db, nil
 }
 
-func (rp *FileRepository) Close(){}
+func (rp *FileRepository) Close() {}
 
-func (rp *FileRepository) Ping(_ context.Context) error{ return nil }
+func (rp *FileRepository) Ping(_ context.Context) error { return nil }
 
 // A record set data representation in file
 type record struct {

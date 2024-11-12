@@ -5,7 +5,7 @@ import "fmt"
 
 // AlreadyExistError defines error in case of creating shortening for long URL that already exist in data storage
 type AlreadyExistError struct {
-	ExistShortStr string
+	ExistShortStr    string
 	ExistOriginalURL string
 }
 
@@ -15,7 +15,7 @@ func (ex *AlreadyExistError) Error() string {
 
 func NewAlreadyExistError(original_url, short_str string) error {
 	return &AlreadyExistError{
-		ExistShortStr: short_str,
+		ExistShortStr:    short_str,
 		ExistOriginalURL: original_url,
 	}
 }

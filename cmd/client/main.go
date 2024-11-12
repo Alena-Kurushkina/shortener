@@ -14,10 +14,10 @@ type resultResponse struct {
 	Result string `json:"result"`
 }
 
-type batchElement struct{
+type batchElement struct {
 	CorrelarionID string `json:"correlation_id"`
-	OriginalURL string `json:"original_url"`
-	ShortURL string `json:"short_url,omitempty"`
+	OriginalURL   string `json:"original_url"`
+	ShortURL      string `json:"short_url,omitempty"`
 }
 
 func main() {
@@ -145,14 +145,14 @@ func main() {
 	}
 	fmt.Println(string(body))
 
-	rr1:= make([]batchElement, 0, 10)
+	rr1 := make([]batchElement, 0, 10)
 	err = json.Unmarshal(body, &rr1)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("Response body",rr1)
-	
+	fmt.Println("Response body", rr1)
+
 	//--------
 
 	var requestBody bytes.Buffer

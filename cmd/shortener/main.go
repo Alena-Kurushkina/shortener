@@ -19,9 +19,9 @@ func main() {
 	}
 	defer logger.Log.Sync()
 
-	ctx:=context.Background()
+	ctx := context.Background()
 
-	repo, err := repository.NewRepository(ctx,cfg)
+	repo, err := repository.NewRepository(ctx, cfg)
 	if err != nil {
 		panic(err)
 	}

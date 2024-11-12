@@ -15,7 +15,7 @@ type Config struct {
 	BaseURL         string
 	ServerAddress   string
 	FileStoragePath string
-	ConnectionStr string
+	ConnectionStr   string
 }
 
 // InitConfig initialize configuration variables from flags values and environment variables
@@ -28,7 +28,6 @@ func InitConfig() *Config {
 	flag.StringVar(&cfg.FileStoragePath, "f", "/Users/shortener_storage.txt", "path to storage file")
 	flag.StringVar(&cfg.ConnectionStr, "d", fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", `127.0.0.1`, `practicum`, `123456`, `practicumdb`), "connection string to database")
 	//flag.StringVar(&cfg.ConnectionStr, "d", "", "connection string to database")
-
 
 	// parse flags
 	flag.Parse()
