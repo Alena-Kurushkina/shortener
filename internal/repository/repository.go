@@ -79,9 +79,9 @@ func (r MemoryRepository) Select(_ context.Context, key string) (string, error) 
 	return "", fmt.Errorf("can't find value of key")
 }
 
-func (rp *MemoryRepository) Close() {}
+func (r *MemoryRepository) Close() {}
 
-func (rp *MemoryRepository) Ping(_ context.Context) error { return nil }
+func (r *MemoryRepository) Ping(_ context.Context) error { return nil }
 
 // newDBRepository initializes data storage in database
 func newDBRepository(ctx context.Context, connectionStr string) (api.Storager, error) {
@@ -192,13 +192,13 @@ func (r DBRepository) InsertBatch(ctx context.Context, batch []api.BatchElement)
 	return tx.Commit()
 }
 
-func (rp *DBRepository) Close() {
-	rp.selectStmt.Close()
-	rp.database.Close()
+func (r *DBRepository) Close() {
+	r.selectStmt.Close()
+	r.database.Close()
 }
 
-func (rp *DBRepository) Ping(ctx context.Context) error {
-	return rp.database.PingContext(ctx)
+func (r *DBRepository) Ping(ctx context.Context) error {
+	return r.database.PingContext(ctx)
 }
 
 // Select returns data from storage
@@ -250,9 +250,9 @@ func newFileRepository(filename string) (api.Storager, error) {
 	return &db, nil
 }
 
-func (rp *FileRepository) Close() {}
+func (r *FileRepository) Close() {}
 
-func (rp *FileRepository) Ping(_ context.Context) error { return nil }
+func (r *FileRepository) Ping(_ context.Context) error { return nil }
 
 // A record set data representation in file
 type record struct {

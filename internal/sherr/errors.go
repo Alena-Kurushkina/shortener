@@ -13,9 +13,9 @@ func (ex *AlreadyExistError) Error() string {
 	return fmt.Sprintf("You are trying to shorten URL %s that already has shortening %s", ex.ExistOriginalURL, ex.ExistShortStr)
 }
 
-func NewAlreadyExistError(original_url, short_str string) error {
+func NewAlreadyExistError(originalURL, shortURL string) error {
 	return &AlreadyExistError{
-		ExistShortStr:    short_str,
-		ExistOriginalURL: original_url,
+		ExistShortStr:    shortURL,
+		ExistOriginalURL: originalURL,
 	}
 }

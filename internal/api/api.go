@@ -198,7 +198,7 @@ func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *htt
 		return
 	}
 	// generate shortening
-	for k, _ := range batch {
+	for k:= range batch {
 		batch[k].ShortURL = generateRandomString(15)
 	}
 	// write to data storage
