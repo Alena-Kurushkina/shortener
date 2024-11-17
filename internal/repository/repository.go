@@ -9,11 +9,12 @@ import (
 	"fmt"
 	"os"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
+
 	"github.com/Alena-Kurushkina/shortener/internal/api"
 	"github.com/Alena-Kurushkina/shortener/internal/config"
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
 	"github.com/Alena-Kurushkina/shortener/internal/sherr"
-	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 // A FileRepository represents a file data storage
