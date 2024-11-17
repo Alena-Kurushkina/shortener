@@ -3,7 +3,9 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"math/rand"
 	"net/http"
@@ -13,15 +15,19 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/Alena-Kurushkina/shortener/internal/config"
+	"github.com/Alena-Kurushkina/shortener/internal/sherr"
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
 )
 
 type Storager interface {
-	Insert(key, value string) error
-	Select(key string) (string, error)
+	Insert(ctx context.Context, key, value string) error
+	InsertBatch(_ context.Context, batch []BatchElement) error
+	Select(ctx context.Context, key string) (string, error)
+	Ping(ctx context.Context) error
+	Close()
 }
 
-// A Shortener aggregates helpfull elements
+// A Shortener aggregates data storage and configurations
 type Shortener struct {
 	repo   Storager
 	config *config.Config
@@ -69,8 +75,17 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 
 	// generate shortening
 	shortStr := generateRandomString(15)
-	if err := sh.repo.Insert(shortStr, url); err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+	insertErr := sh.repo.Insert(req.Context(), shortStr, url)
+
+	var existError *sherr.AlreadyExistError
+	if errors.As(insertErr, &existError) {
+		// make response
+		res.WriteHeader(http.StatusConflict)
+		res.Write([]byte(sh.config.BaseURL + existError.ExistShortStr))
+
+		return
+	} else if insertErr != nil {
+		http.Error(res, insertErr.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -79,19 +94,19 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 	res.Write([]byte(sh.config.BaseURL + shortStr))
 }
 
-// A URLRequest is for request decode from json
+// A URLRequest is for request decoding from json
 type URLRequest struct {
 	URL string `json:"url"`
 }
 
-// A ResultResponse is for response encode in json
+// A ResultResponse is for response encoding in json
 type ResultResponse struct {
 	Result string `json:"result"`
 }
 
 // CreateShorteningJSON handle POST HTTP request with long URL in body and retrieves base URL with shortening.
 // It handle only requests with content type application/json.
-// Response body has content type application/json.
+// Response has content type application/json.
 func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Request) {
 	// set response content type
 	res.Header().Set("Content-Type", "application/json")
@@ -116,8 +131,26 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 
 	// generate shortening
 	shortStr := generateRandomString(15)
-	if err := sh.repo.Insert(shortStr, url.URL); err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+	insertErr := sh.repo.Insert(req.Context(), shortStr, url.URL)
+
+	var existError *sherr.AlreadyExistError
+	if errors.As(insertErr, &existError) {
+		// make response
+		responseData, err := json.Marshal(ResultResponse{
+			Result: sh.config.BaseURL + existError.ExistShortStr,
+		})
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// make response
+		res.WriteHeader(http.StatusConflict)
+		res.Write(responseData)
+		//res.Write([]byte(sh.config.BaseURL + existError.ExistShortStr))
+
+		return
+	} else if insertErr != nil {
+		http.Error(res, insertErr.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -125,6 +158,60 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 	responseData, err := json.Marshal(ResultResponse{
 		Result: sh.config.BaseURL + shortStr,
 	})
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	res.WriteHeader(http.StatusCreated)
+	res.Write(responseData)
+}
+
+// A BatchElement represent structure to marshal element of request`s json array
+type BatchElement struct {
+	CorrelarionID string `json:"correlation_id"`
+	OriginalURL   string `json:"original_url"`
+	ShortURL      string `json:"short_url,omitempty"`
+}
+
+// CreateShorteningJSONBatch handle POST HTTP request with set of long URLs in body and retrieves set of shortenings.
+// It handle only requests with content type application/json.
+// Response has content type application/json.
+func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *http.Request) {
+	// set response content type
+	res.Header().Set("Content-Type", "application/json")
+
+	// check content type
+	contentType := req.Header.Get("Content-Type")
+	if contentType != "application/json" && contentType != "application/x-gzip" {
+		http.Error(res, "Invalid content type", http.StatusBadRequest)
+		return
+	}
+
+	// decode request body
+	batch := make([]BatchElement, 0, 10)
+	if err := json.NewDecoder(req.Body).Decode(&batch); err != nil {
+		http.Error(res, "Can't read body", http.StatusBadRequest)
+		return
+	}
+	if len(batch) == 0 {
+		http.Error(res, "Body is empty", http.StatusBadRequest)
+		return
+	}
+	// generate shortening
+	for k:= range batch {
+		batch[k].ShortURL = generateRandomString(15)
+	}
+	// write to data storage
+	if err := sh.repo.InsertBatch(req.Context(), batch); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// make response
+	for k, v := range batch {
+		batch[k].ShortURL = sh.config.BaseURL + v.ShortURL
+	}
+	responseData, err := json.Marshal(batch)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
@@ -145,7 +232,7 @@ func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// get long URL from repository
-	repoOutput, err := sh.repo.Select(param)
+	repoOutput, err := sh.repo.Select(req.Context(), param)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
@@ -155,6 +242,20 @@ func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "text/plain")
 	res.Header().Set("Location", repoOutput)
 	res.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+// PingDB check connection to data storage
+func (sh *Shortener) PingDB(res http.ResponseWriter, req *http.Request) {
+
+	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
+	defer cancel()
+	if err := sh.repo.Ping(ctx); err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// make responce
+	res.WriteHeader(http.StatusOK)
 }
 
 // generateRandomString returns string of random characters of passed length

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -8,18 +9,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRouter(t *testing.T) {
-	rp, err := NewRepository("C:\\shortener_storage_test.txt")
+func TestRepository(t *testing.T) {
+	rp, err := newFileRepository("/shortener_storage_test.txt")
 	require.NoError(t, err)
-	_, err = os.Stat("C:\\shortener_storage_test.txt")
+	_, err = os.Stat("/shortener_storage_test.txt")
 	assert.NotEqual(t, os.ErrNotExist, err, "Файл для хранения сокращённых URL не существует")
 
-	rp.Insert("hgfdstrjti345", "http://iste.ru")
+	rp.Insert(context.TODO(), "hgfdstrjti345", "http://iste.ru")
 
-	rp, err = NewRepository("C:\\shortener_storage_test.txt")
+	rp, err = newFileRepository("/shortener_storage_test.txt")
 	require.NoError(t, err)
 
-	val, err := rp.Select("hgfdstrjti345")
+	val, err := rp.Select(context.TODO(), "hgfdstrjti345")
 	require.NoError(t, err)
 	assert.Equal(t, "http://iste.ru", val, "Не сохранены строки, записанные перед перезагрузкой")
 }

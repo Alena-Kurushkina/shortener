@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
+
 	"github.com/Alena-Kurushkina/shortener/internal/api"
 	"github.com/Alena-Kurushkina/shortener/internal/config"
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
 	"github.com/Alena-Kurushkina/shortener/internal/repository"
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
+	_ "github.com/golang/mock/mockgen/model"
 )
 
 func main() {
@@ -16,10 +19,13 @@ func main() {
 	}
 	defer logger.Log.Sync()
 
-	repo, err := repository.NewRepository(cfg.FileStoragePath)
+	ctx := context.Background()
+
+	repo, err := repository.NewRepository(ctx, cfg)
 	if err != nil {
 		panic(err)
 	}
+	defer repo.Close()
 
 	sh := api.NewShortener(repo, cfg)
 

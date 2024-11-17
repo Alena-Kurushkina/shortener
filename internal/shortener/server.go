@@ -3,7 +3,6 @@
 package shortener
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -18,6 +17,8 @@ type Handler interface {
 	CreateShortening(res http.ResponseWriter, req *http.Request)
 	GetFullString(res http.ResponseWriter, req *http.Request)
 	CreateShorteningJSON(res http.ResponseWriter, req *http.Request)
+	CreateShorteningJSONBatch(res http.ResponseWriter, req *http.Request)
+	PingDB(res http.ResponseWriter, req *http.Request)
 }
 
 // A Server aggregates handler and config
@@ -34,7 +35,9 @@ func newRouter(hi Handler) chi.Router {
 
 	r.Post("/", hi.CreateShortening)
 	r.Get("/{id}", hi.GetFullString)
+	r.Get("/ping", hi.PingDB)
 	r.Post("/api/shorten", hi.CreateShorteningJSON)
+	r.Post("/api/shorten/batch", hi.CreateShorteningJSONBatch)
 
 	return r
 }
@@ -49,7 +52,7 @@ func NewServer(hdl Handler, cfg *config.Config) *Server {
 
 // Run starts listening to server address and handling requests
 func (s *Server) Run() {
-	log.Println("Server is listening on ", s.Config.ServerAddress)
+	logger.Log.Infof("Server is listening on %s", s.Config.ServerAddress)
 	err := http.ListenAndServe(s.Config.ServerAddress, s.Handler)
 	if err != nil {
 		panic(err)
