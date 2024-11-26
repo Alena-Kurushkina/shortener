@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +16,7 @@ func TestRepository(t *testing.T) {
 	_, err = os.Stat("/shortener_storage_test.txt")
 	assert.NotEqual(t, os.ErrNotExist, err, "Файл для хранения сокращённых URL не существует")
 
-	rp.Insert(context.TODO(), "hgfdstrjti345", "http://iste.ru")
+	rp.Insert(context.TODO(),uuid.NewV4(), "hgfdstrjti345", "http://iste.ru")
 
 	rp, err = newFileRepository("/shortener_storage_test.txt")
 	require.NoError(t, err)

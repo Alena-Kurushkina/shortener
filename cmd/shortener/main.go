@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 
+	_ "github.com/golang/mock/mockgen/model"
+
 	"github.com/Alena-Kurushkina/shortener/internal/api"
 	"github.com/Alena-Kurushkina/shortener/internal/config"
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
 	"github.com/Alena-Kurushkina/shortener/internal/repository"
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
-	_ "github.com/golang/mock/mockgen/model"
 )
 
 func main() {
