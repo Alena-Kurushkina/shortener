@@ -48,3 +48,6 @@ mockgen -destination=internal/mocks/mock_store.go -package=mocks internal/reposi
 --build_flags=--mod=mod
 
 mockgen -destination=internal/api/mock_store.go -source=internal/api/api.go Storager 
+
+flag.StringVar(&cfg.ConnectionStr, "d", fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", `127.0.0.1`, `practicum`, `123456`, `practicumdb`), "connection string to database")
+	

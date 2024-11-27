@@ -6,7 +6,6 @@ package config
 
 import (
 	"flag"
-	"fmt"
 	"os"
 )
 
@@ -24,11 +23,9 @@ func InitConfig() *Config {
 
 	// define flags
 	flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "address of HTTP server")
-	flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080", "base address of shorten URL")
-	//flag.StringVar(&cfg.FileStoragePath, "f", "/Users/shortener_storage.txt", "path to storage file")
+	flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080", "base address of shorten URL")	
 	flag.StringVar(&cfg.FileStoragePath, "f", "", "path to storage file")
-	flag.StringVar(&cfg.ConnectionStr, "d", fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", `127.0.0.1`, `practicum`, `123456`, `practicumdb`), "connection string to database")
-	//flag.StringVar(&cfg.ConnectionStr, "d", "", "connection string to database")
+	flag.StringVar(&cfg.ConnectionStr, "d", "", "connection string to database")
 
 	// parse flags
 	flag.Parse()
