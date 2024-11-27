@@ -45,7 +45,7 @@ type (
 		body        string
 		want        want
 	}
-	
+
 	batchElement struct {
 		CorrelarionID string `json:"correlation_id,omitempty"`
 		OriginalURL   string `json:"original_url"`
@@ -60,6 +60,7 @@ func testRequest(t *testing.T, ts *httptest.Server, reqMethod, path string, cont
 
 	resp, err := ts.Client().Do(request)
 	require.NoError(t, err)
+
 	defer resp.Body.Close()
 
 	rp := responseParams{}
@@ -79,19 +80,23 @@ func testRequest(t *testing.T, ts *httptest.Server, reqMethod, path string, cont
 }
 
 func TestRouter(t *testing.T) {
-	ctrl:=gomock.NewController(t)
-	m:=NewMockStorager(ctrl)
+	ctrl := gomock.NewController(t)
+	m := NewMockStorager(ctrl)
 
 	m.EXPECT().Insert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-	
+
 	cfg = config.InitConfig()
 	sh := NewShortener(m, cfg)
 
 	r := chi.NewRouter()
+
 	r.Use(middleware.Logger)
-	r.Use(authenticator.AuthMiddleware)
-	r.Post("/", sh.CreateShortening)
 	r.Get("/{id}", sh.GetFullString)
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.Logger)
+		r.Use(authenticator.AuthMiddleware)
+		r.Post("/", sh.CreateShortening)
+	})
 
 	ts := httptest.NewServer(r)
 	ts.Client().CheckRedirect = func(req *http.Request, via []*http.Request) error {
@@ -101,15 +106,15 @@ func TestRouter(t *testing.T) {
 
 	t.Run("positive short and expand test", func(t *testing.T) {
 		testDataShort := testData{
-			http.MethodPost, 
-			"", 
-			"/", 
-			"text/plain", 
-			"http://site.ru/somelongurl", 
+			http.MethodPost,
+			"",
+			"/",
+			"text/plain",
+			"http://site.ru/somelongurl",
 			want{
-				http.StatusCreated, 
-				cfg.BaseURL, 
-				"text/plain", 
+				http.StatusCreated,
+				cfg.BaseURL,
+				"text/plain",
 				"",
 			},
 		}
@@ -126,21 +131,21 @@ func TestRouter(t *testing.T) {
 		assert.Equal(t, testDataShort.want.location, rp.location, "Short URL: Location не совпадает с ожидаемым")
 
 		testDataExpand := testData{
-			http.MethodGet, 
-			"", 
-			"/" + shortening, 
-			"text/plain", 
-			"", 
+			http.MethodGet,
+			"",
+			"/" + shortening,
+			"text/plain",
+			"",
 			want{
-				http.StatusTemporaryRedirect, 
-				"", 
-				"text/plain", 
+				http.StatusTemporaryRedirect,
+				"",
+				"text/plain",
 				"http://site.ru/somelongurl",
 			},
 		}
 		_ = testDataExpand.name
 
-		m.EXPECT().Select(gomock.Any(),shortening).Return("http://site.ru/somelongurl", nil)
+		m.EXPECT().Select(gomock.Any(), shortening).Return("http://site.ru/somelongurl", nil)
 
 		rpGet := testRequest(t, ts, testDataExpand.method, testDataExpand.path, testDataExpand.contentType, testDataExpand.body)
 		assert.Equal(t, testDataExpand.want.code, rpGet.statusCode, "Expand URL: Код статуса ответа не совпадает с ожидаемым")
@@ -149,7 +154,7 @@ func TestRouter(t *testing.T) {
 		assert.Equal(t, testDataExpand.want.location, rpGet.location, "Expand URL: Location не совпадает с ожидаемым")
 	})
 
-	m.EXPECT().Select(gomock.Any(),"jfhdgt").Return("", errors.New("can't find value of key"))
+	m.EXPECT().Select(gomock.Any(), "jfhdgt").Return("", errors.New("can't find value of key"))
 
 	tests := []testData{
 		{http.MethodPost, "negative create shortening test", "/", "text/plain", "", want{http.StatusBadRequest, "Body is empty", "text/plain", ""}},
@@ -171,19 +176,22 @@ func TestRouter(t *testing.T) {
 }
 
 func TestRouterJSON(t *testing.T) {
-	ctrl:=gomock.NewController(t)
-	m:=NewMockStorager(ctrl)
+	ctrl := gomock.NewController(t)
+	m := NewMockStorager(ctrl)
 
-	m.EXPECT().Insert(gomock.Any(),gomock.Any(),gomock.Any(),gomock.Any()).Return(nil)
-	m.EXPECT().InsertBatch(gomock.Any(),gomock.Any(),gomock.Any()).Return(nil)
+	m.EXPECT().Insert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	//m.EXPECT().InsertBatch(gomock.Any(),gomock.Any(),gomock.Any()).Return(nil)
 
 	sh := NewShortener(m, cfg)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Use(authenticator.AuthMiddleware)
-	r.Post("/api/shorten", sh.CreateShorteningJSON)
 	r.Get("/{id}", sh.GetFullString)
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.Logger)
+		r.Use(authenticator.AuthMiddleware)
+		r.Post("/api/shorten", sh.CreateShorteningJSON)
+	})
 
 	ts := httptest.NewServer(r)
 	ts.Client().CheckRedirect = func(req *http.Request, via []*http.Request) error {
@@ -193,16 +201,16 @@ func TestRouterJSON(t *testing.T) {
 
 	t.Run("positive short and expand test", func(t *testing.T) {
 		testDataShort := testData{
-			method: http.MethodPost, 
-			name: "", 
-			path: "/api/shorten", 
-			contentType: "application/json", 
-			body: `{"url": "http://site.ru/somelongurl"}`, 
+			method:      http.MethodPost,
+			name:        "",
+			path:        "/api/shorten",
+			contentType: "application/json",
+			body:        `{"url": "http://site.ru/somelongurl"}`,
 			want: want{
-				code: http.StatusCreated, 
-				response: cfg.BaseURL, 
-				contentType: "application/json", 
-				location: "",
+				code:        http.StatusCreated,
+				response:    cfg.BaseURL,
+				contentType: "application/json",
+				location:    "",
 			},
 		}
 		_ = testDataShort.name
@@ -222,19 +230,19 @@ func TestRouterJSON(t *testing.T) {
 		assert.Contains(t, rp.contentType, testDataShort.want.contentType, "Short URL: Content-Type не совпадает с ожидаемым")
 		assert.Equal(t, testDataShort.want.location, rp.location, "Short URL: Location не совпадает с ожидаемым")
 
-		m.EXPECT().Select(gomock.Any(),shortening).Return("http://site.ru/somelongurl", nil)
+		m.EXPECT().Select(gomock.Any(), shortening).Return("http://site.ru/somelongurl", nil)
 
 		testDataExpand := testData{
-			method: http.MethodGet, 
-			name: "", 
-			path: "/" + shortening, 
-			contentType: "text/plain", 
-			body: "", 
+			method:      http.MethodGet,
+			name:        "",
+			path:        "/" + shortening,
+			contentType: "text/plain",
+			body:        "",
 			want: want{
-				code: http.StatusTemporaryRedirect, 
-				response: "", 
-				contentType: "text/plain", 
-				location: "http://site.ru/somelongurl",
+				code:        http.StatusTemporaryRedirect,
+				response:    "",
+				contentType: "text/plain",
+				location:    "http://site.ru/somelongurl",
 			},
 		}
 		_ = testDataExpand.name
@@ -247,28 +255,28 @@ func TestRouterJSON(t *testing.T) {
 
 	tests := []testData{
 		{
-			http.MethodPost, 
-			"negative create shortening test (can't decode empty body)", 
-			"/api/shorten", 
-			"application/json", 
-			"", 
+			http.MethodPost,
+			"negative create shortening test (can't decode empty body)",
+			"/api/shorten",
+			"application/json",
+			"",
 			want{
-				http.StatusBadRequest, 
-				"Can't read body", 
-				"text/plain", 
+				http.StatusBadRequest,
+				"Can't read body",
+				"text/plain",
 				"",
 			},
 		},
 		{
-			http.MethodPost, 
-			"negative create shortening test (wrong content type)", 
-			"/api/shorten", 
-			"text/plain", 
-			"", 
+			http.MethodPost,
+			"negative create shortening test (wrong content type)",
+			"/api/shorten",
+			"text/plain",
+			"",
 			want{
-				http.StatusBadRequest, 
-				"Invalid content type", 
-				"text/plain", 
+				http.StatusBadRequest,
+				"Invalid content type",
+				"text/plain",
 				"",
 			},
 		},
@@ -287,18 +295,21 @@ func TestRouterJSON(t *testing.T) {
 }
 
 func TestRouterJSONBatch(t *testing.T) {
-	ctrl:=gomock.NewController(t)
-	m:=NewMockStorager(ctrl)
+	ctrl := gomock.NewController(t)
+	m := NewMockStorager(ctrl)
 
-	m.EXPECT().InsertBatch(gomock.Any(),gomock.Any(),gomock.Any()).Return(nil)
+	m.EXPECT().InsertBatch(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	sh := NewShortener(m, cfg)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Use(authenticator.AuthMiddleware)
-	r.Post("/api/shorten/batch", sh.CreateShorteningJSONBatch)
 	r.Get("/{id}", sh.GetFullString)
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.Logger)
+		r.Use(authenticator.AuthMiddleware)
+		r.Post("/api/shorten/batch", sh.CreateShorteningJSONBatch)
+	})
 
 	ts := httptest.NewServer(r)
 	ts.Client().CheckRedirect = func(req *http.Request, via []*http.Request) error {
@@ -306,39 +317,39 @@ func TestRouterJSONBatch(t *testing.T) {
 	}
 	defer ts.Close()
 
-	type batchElem struct{
-		correlarionID string 
-		originalURL   string 
-		baseURL      string 
+	type batchElem struct {
+		correlarionID string
+		originalURL   string
+		baseURL       string
 	}
-	type wantBatch struct{
-		code int
+	type wantBatch struct {
+		code        int
 		contentType string
-		batchElems []batchElem
+		batchElems  []batchElem
 	}
 
 	t.Run("positive short and expand test", func(t *testing.T) {
 		testDataShort := testData{
-			method: http.MethodPost, 
-			name: "", 
-			path: "/api/shorten/batch", 
-			contentType: "application/json", 
-			body: `[{"correlation_id":"dfgh345","original_url": "http://some-site.ru"},{"correlation_id":"kjhg1234","original_url": "http://testsite.ru"}]`, 
-			want: want{},
+			method:      http.MethodPost,
+			name:        "",
+			path:        "/api/shorten/batch",
+			contentType: "application/json",
+			body:        `[{"correlation_id":"dfgh345","original_url": "http://some-site.ru"},{"correlation_id":"kjhg1234","original_url": "http://testsite.ru"}]`,
+			want:        want{},
 		}
-		wantResult:= wantBatch{
-			code: http.StatusCreated,
+		wantResult := wantBatch{
+			code:        http.StatusCreated,
 			contentType: "application/json",
 			batchElems: []batchElem{
 				{
 					correlarionID: "dfgh345",
-					originalURL: "http://some-site.ru",
-					baseURL: cfg.BaseURL,
+					originalURL:   "http://some-site.ru",
+					baseURL:       cfg.BaseURL,
 				},
 				{
 					correlarionID: "kjhg1234",
-					originalURL: "http://testsite.ru",
-					baseURL: cfg.BaseURL,
+					originalURL:   "http://testsite.ru",
+					baseURL:       cfg.BaseURL,
 				},
 			},
 		}
@@ -351,9 +362,9 @@ func TestRouterJSONBatch(t *testing.T) {
 
 		assert.Equal(t, wantResult.code, rp.statusCode, "Short URL: Код статуса ответа не совпадает с ожидаемым")
 		assert.Contains(t, rp.contentType, wantResult.contentType, "Short URL: Content-Type не совпадает с ожидаемым")
-		
-		for k,v := range wantResult.batchElems{
-			assert.Equal(t, v.correlarionID , rr1[k].CorrelarionID)
+
+		for k, v := range wantResult.batchElems {
+			assert.Equal(t, v.correlarionID, rr1[k].CorrelarionID)
 			assert.Equal(t, v.originalURL, rr1[k].OriginalURL)
 			assert.Contains(t, rr1[k].ShortURL, v.baseURL)
 		}

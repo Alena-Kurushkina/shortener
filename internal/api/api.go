@@ -16,6 +16,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/Alena-Kurushkina/shortener/internal/config"
+	"github.com/Alena-Kurushkina/shortener/internal/logger"
 	"github.com/Alena-Kurushkina/shortener/internal/sherr"
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
 )
@@ -25,31 +26,66 @@ type Storager interface {
 	InsertBatch(_ context.Context, userID uuid.UUID, batch []BatchElement) error
 	Select(ctx context.Context, key string) (string, error)
 	SelectUserAll(ctx context.Context, userID uuid.UUID) ([]BatchElement, error)
-	DeleteRecords(ctx context.Context,userID uuid.UUID, recordIDs []string) error
+	DeleteRecords(ctx context.Context, deleteItems []DeleteItem) error
 	Ping(ctx context.Context) error
 	Close()
 }
 
 // A Shortener aggregates data storage and configurations
 type Shortener struct {
-	repo   Storager
-	config *config.Config
+	repo       Storager
+	config     *config.Config
+	deleteChan chan DeleteItem
 }
 
 // NewShortener returns new Shortener pointer initialized by repository and config
 func NewShortener(storage Storager, cfg *config.Config) shortener.Handler {
 	shortener := Shortener{
-		repo:   storage,
-		config: cfg,
+		repo:       storage,
+		config:     cfg,
+		deleteChan: make(chan DeleteItem, 1024),
 	}
+
+	go shortener.flushDeleteItems()
+
 	return &shortener
+}
+
+type DeleteItem struct {
+	IDs    []string
+	UserID uuid.UUID
+}
+
+func (sh *Shortener) flushDeleteItems() {
+	ticker := time.NewTicker(10 * time.Second)
+
+	var items []DeleteItem
+
+	for {
+		select {
+		case msg := <-sh.deleteChan:
+			items = append(items, msg)
+		case <-ticker.C:
+			if len(items) == 0 {
+				continue
+			}
+			err := sh.repo.DeleteRecords(context.TODO(), items)
+			if err != nil {
+				logger.Log.Infof("Can't delete records", err.Error())
+				continue
+			}
+			logger.Log.Info("Patch of shortenings was deleted")
+			items = nil
+
+		}
+	}
 }
 
 // CreateShortening habdle POST HTTP request with long URL in body and retrieves base URL with shortening.
 // It handle only requests with content type application/x-www-form-urlencoded or text/plain.
 // Response body has content type text/plain.
 func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request) {
-		// set response content type
+	// set response content type
 	res.Header().Set("Content-Type", "text/plain")
 
 	// parse request body
@@ -76,12 +112,14 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 		return
 	}
 
+	logger.Log.Infof("Handle route /, method POST, body: %s", url)
+
 	// generate shortening
 	shortStr := generateRandomString(15)
 
-	q:=req.URL.Query()
-	id,err:=uuid.FromString(q.Get("userUUID"))	
-	if err!=nil{
+	q := req.URL.Query()
+	id, err := uuid.FromString(q.Get("userUUID"))
+	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -140,16 +178,18 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 		return
 	}
 
-	q:=req.URL.Query()
-	id,err:=uuid.FromString(q.Get("userUUID"))	
-	if err!=nil{
+	q := req.URL.Query()
+	id, err := uuid.FromString(q.Get("userUUID"))
+	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	logger.Log.Infof("Handle route /api/shorten, method POST, body: %s", url.URL)
+
 	// generate shortening
 	shortStr := generateRandomString(15)
-	insertErr := sh.repo.Insert(req.Context(),id, shortStr, url.URL)
+	insertErr := sh.repo.Insert(req.Context(), id, shortStr, url.URL)
 
 	var existError *sherr.AlreadyExistError
 	if errors.As(insertErr, &existError) {
@@ -216,13 +256,13 @@ func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *htt
 		return
 	}
 	// generate shortening
-	for k:= range batch {
+	for k := range batch {
 		batch[k].ShortURL = generateRandomString(15)
 	}
 
-	q:=req.URL.Query()
-	id,err:=uuid.FromString(q.Get("userUUID"))	
-	if err!=nil{
+	q := req.URL.Query()
+	id, err := uuid.FromString(q.Get("userUUID"))
+	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -260,6 +300,9 @@ func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 	// get long URL from repository
 	repoOutput, err := sh.repo.Select(req.Context(), param)
 	if err != nil {
+		if errors.Is(err, sherr.ErrDBRecordDeleted) {
+			http.Error(res, err.Error(), http.StatusGone)
+		}
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -271,9 +314,11 @@ func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 }
 
 func (sh *Shortener) GetUserAllShortenings(res http.ResponseWriter, req *http.Request) {
-	q:=req.URL.Query()
-	id,err:=uuid.FromString(q.Get("userUUID"))	
-	if err!=nil{
+	res.Header().Set("Content-Type", "application/json")
+
+	q := req.URL.Query()
+	id, err := uuid.FromString(q.Get("userUUID"))
+	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -285,27 +330,32 @@ func (sh *Shortener) GetUserAllShortenings(res http.ResponseWriter, req *http.Re
 		return
 	}
 
-	if len(allRecords)==0{
+	if len(allRecords) == 0 {
 		res.WriteHeader(http.StatusNoContent)
 		return
+	}
+
+	for k, v := range allRecords {
+		allRecords[k].ShortURL = sh.config.BaseURL + v.ShortURL
 	}
 
 	responseData, err := json.Marshal(allRecords)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
-	}	
+	}
 	res.Write(responseData)
 
 	// make responce
-	res.Header().Set("Content-Type", "application/json")	
 	res.WriteHeader(http.StatusOK)
 }
 
 func (sh *Shortener) DeleteRecordJSON(res http.ResponseWriter, req *http.Request) {
-	q:=req.URL.Query()
-	id,err:=uuid.FromString(q.Get("userUUID"))	
-	if err!=nil{
+	res.Header().Set("Content-Type", "application/json")
+
+	q := req.URL.Query()
+	id, err := uuid.FromString(q.Get("userUUID"))
+	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -318,7 +368,7 @@ func (sh *Shortener) DeleteRecordJSON(res http.ResponseWriter, req *http.Request
 	}
 
 	// decode request body
-	recordIDs:= make([]string,10)
+	recordIDs := make([]string, 10)
 	if err := json.NewDecoder(req.Body).Decode(&recordIDs); err != nil {
 		http.Error(res, "Can't read body", http.StatusBadRequest)
 		return
@@ -328,14 +378,17 @@ func (sh *Shortener) DeleteRecordJSON(res http.ResponseWriter, req *http.Request
 		return
 	}
 
-	err = sh.repo.DeleteRecords(req.Context(), id, recordIDs)
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	sh.deleteChan <- DeleteItem{IDs: recordIDs, UserID: id}
+
+	logger.Log.Info("Shortenings' ids were send to chan for deletion")
+
+	//err = sh.repo.DeleteRecords(req.Context(), id, recordIDs)
+	// if err != nil {
+	// 	http.Error(res, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
 	// make responce
-	res.Header().Set("Content-Type", "application/json")	
 	res.WriteHeader(http.StatusAccepted)
 }
 

@@ -47,6 +47,20 @@ func (mr *MockStoragerMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockStorager)(nil).Close))
 }
 
+// DeleteRecords mocks base method.
+func (m *MockStorager) DeleteRecords(ctx context.Context, deleteItems []DeleteItem) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteRecords", ctx, deleteItems)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteRecords indicates an expected call of DeleteRecords.
+func (mr *MockStoragerMockRecorder) DeleteRecords(ctx, deleteItems interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRecords", reflect.TypeOf((*MockStorager)(nil).DeleteRecords), ctx, deleteItems)
+}
+
 // Insert mocks base method.
 func (m *MockStorager) Insert(ctx context.Context, userID go_uuid.UUID, key, value string) error {
 	m.ctrl.T.Helper()

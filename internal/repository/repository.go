@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -32,8 +33,8 @@ type MemoryRepository struct {
 
 // A DBRepository store data in database
 type DBRepository struct {
-	database   *sql.DB
-	selectStmt *sql.Stmt
+	database      *sql.DB
+	selectStmt    *sql.Stmt
 	selectAllStmt *sql.Stmt
 }
 
@@ -60,14 +61,14 @@ func newMemoryRepository() (api.Storager, error) {
 }
 
 // Insert adds data to storage
-func (r MemoryRepository) Insert(_ context.Context,id uuid.UUID, key, value string) error {
+func (r MemoryRepository) Insert(_ context.Context, id uuid.UUID, key, value string) error {
 	r.db[key] = value
 
 	return nil
 }
 
 // InsertBatch adds array of data to storage
-func (r MemoryRepository) InsertBatch(_ context.Context,id uuid.UUID, batch []api.BatchElement) error {
+func (r MemoryRepository) InsertBatch(_ context.Context, id uuid.UUID, batch []api.BatchElement) error {
 	for _, v := range batch {
 		r.db[v.ShortURL] = v.OriginalURL
 	}
@@ -95,10 +96,10 @@ func (r MemoryRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]ap
 	// 	return "", err
 	// }
 
-	 return []api.BatchElement{}, nil
+	return []api.BatchElement{}, nil
 }
 
-func (r MemoryRepository) DeleteRecords(ctx context.Context, userID uuid.UUID, recordIDs []string) error {
+func (r MemoryRepository) DeleteRecords(ctx context.Context, deleteItems []api.DeleteItem) error {
 	return nil
 }
 
@@ -123,11 +124,11 @@ func newDBRepository(ctx context.Context, connectionStr string) (api.Storager, e
 
 	tx.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS shortening(
-			id SERIAL PRIMARY KEY,
+			id varchar(50) PRIMARY KEY default substring(md5(random()::text),0,20),
 			originalURL varchar(500) NOT NULL,
 			shortURL varchar(250) NOT NULL,
 			userUUID uuid,
-			deletedFlag bool DEFAULT(false),
+			is_deleted bool DEFAULT(false),
 			UNIQUE (originalURL)
 		);
 		CREATE UNIQUE INDEX IF NOT EXISTS short_idx on shortening (shortURL);
@@ -139,7 +140,7 @@ func newDBRepository(ctx context.Context, connectionStr string) (api.Storager, e
 	}
 
 	stmt1, err := db.PrepareContext(ctx, `
-		SELECT originalURL 
+		SELECT originalURL, is_deleted 
 		FROM shortening 
 		WHERE shortURL LIKE $1
 	`)
@@ -195,19 +196,56 @@ func (r DBRepository) Insert(ctx context.Context, userID uuid.UUID, insertedShor
 	return tx.Commit()
 }
 
-func (r DBRepository) DeleteRecords(ctx context.Context, userID uuid.UUID, recordIDs []string) error {
-	_, err := r.database.ExecContext(ctx,
-		`DELETE from shortening 
-		WHERE userUUID=$1 AND id IN $2`,
-		userID,
-		`(`+strings.Join(recordIDs, ",")+`);`,
-	)
+func (r DBRepository) DeleteRecords(ctx context.Context, deleteItems []api.DeleteItem) error {
+	//  UPDATE shortening
+	// 	SET is_deleted=true
+	// 	FROM (
+	// 		VALUES
+	// 			(uuid('0de70533-e13c-4269-bba9-e4e7653b4c72'), 'kjhg1234'),
+	// 			(uuid('0de70533-e13c-4269-bba9-e4e7653b4c72'), 'dfgh345')
+	// 	) AS data(id_user, id_record)
+	// 	WHERE shortening.useruuid=data.id_user
+	// 		AND shortening.id=data.id_record
+
+	param := ""
+	for _, v := range deleteItems {
+		for _, i := range v.IDs {
+			param = param + `(uuid('` + v.UserID.String() + `'), '` + i + `'),`
+		}
+	}
+	param, _ = strings.CutSuffix(param, ",")
+
+	stmt := `UPDATE shortening
+		SET is_deleted=true
+		FROM (
+			VALUES` + param +
+		`) AS data(id_user, shortening)
+		WHERE shortening.useruuid=data.id_user
+			AND shortening.shorturl=data.shortening`
+
+	logger.Log.Info(stmt)
+
+	sqlRes, err := r.database.ExecContext(ctx, stmt)
+
+	if err != nil {
+		logger.Log.Errorf("Error while deletion: ", err.Error())
+	}
+
+	sf, _ := sqlRes.RowsAffected()
+	logger.Log.Infof("Rows affected while deletion: %s", strconv.FormatInt(sf, 10))
+
+	// _, err := r.database.ExecContext(ctx,
+	// 	`UPDATE shortening
+	// 	SET is_deleted = true
+	// 	WHERE userUUID=$1 AND id IN ('`+strings.Join(recordIDs, "','")+`');`,
+	// 	userID,
+	// )
 
 	return err
 }
 
 // InsertBatch adds array of data to storage
-func (r DBRepository) InsertBatch(ctx context.Context,userID uuid.UUID, batch []api.BatchElement) error {
+func (r DBRepository) InsertBatch(ctx context.Context, userID uuid.UUID, batch []api.BatchElement) error {
 	tx, err := r.database.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -215,8 +253,8 @@ func (r DBRepository) InsertBatch(ctx context.Context,userID uuid.UUID, batch []
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx, `
-		INSERT INTO shortening (userUUID, originalURL, shortURL) 
-		VALUES ($1, $2, $3) 
+		INSERT INTO shortening (id, userUUID, originalURL, shortURL) 
+		VALUES ($1, $2, $3, $4) 
 		ON CONFLICT (originalurl) 
 			DO UPDATE SET originalurl = shortening.originalurl
 		RETURNING originalurl, shorturl;
@@ -227,6 +265,7 @@ func (r DBRepository) InsertBatch(ctx context.Context,userID uuid.UUID, batch []
 
 	for _, v := range batch {
 		_, err = stmt.ExecContext(ctx,
+			v.CorrelarionID,
 			userID,
 			v.OriginalURL,
 			v.ShortURL,
@@ -253,11 +292,17 @@ func (r DBRepository) Select(ctx context.Context, key string) (string, error) {
 	row := r.selectStmt.QueryRowContext(ctx,
 		key,
 	)
-	var longURL string
+	var (
+		longURL string
+		deleted bool
+	)
 
-	err := row.Scan(&longURL)
+	err := row.Scan(&longURL, &deleted)
 	if err != nil {
 		return "", err
+	}
+	if deleted {
+		return "", sherr.ErrDBRecordDeleted
 	}
 
 	return longURL, nil
@@ -269,29 +314,29 @@ func (r DBRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]api.Ba
 		id.String(),
 	)
 	if err != nil {
-        return nil, err
-    }
+		return nil, err
+	}
 	defer rows.Close()
 
 	records := make([]api.BatchElement, 0, 10)
 
-    // пробегаем по всем записям
-    for rows.Next() {
-        var v api.BatchElement
-        err = rows.Scan(&v.OriginalURL, &v.ShortURL)
-        if err != nil {
-            return nil, err
-        }
+	// пробегаем по всем записям
+	for rows.Next() {
+		var v api.BatchElement
+		err = rows.Scan(&v.OriginalURL, &v.ShortURL)
+		if err != nil {
+			return nil, err
+		}
 
-        records = append(records, v)
-    }
+		records = append(records, v)
+	}
 
-    // проверяем на ошибки
-    err = rows.Err()
-    if err != nil {
-        return nil, err
-    }
-    return records, nil
+	// проверяем на ошибки
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	return records, nil
 }
 
 // newFileRepository initializes data storage in file
@@ -334,13 +379,13 @@ func (r *FileRepository) Ping(_ context.Context) error { return nil }
 
 // A record set data representation in file
 type record struct {
-	UUID        uuid.UUID   `json:"uuid"`
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
+	UUID        uuid.UUID `json:"uuid"`
+	ShortURL    string    `json:"short_url"`
+	OriginalURL string    `json:"original_url"`
 }
 
 // Insert adds array of data to storage
-func (r FileRepository) InsertBatch(_ context.Context,userID uuid.UUID, batch []api.BatchElement) error {
+func (r FileRepository) InsertBatch(_ context.Context, userID uuid.UUID, batch []api.BatchElement) error {
 	// open file
 	file, err := os.OpenFile(r.filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|os.O_APPEND, 0666)
 	if err != nil {
@@ -376,7 +421,7 @@ func (r FileRepository) InsertBatch(_ context.Context,userID uuid.UUID, batch []
 }
 
 // Insert adds data to storage
-func (r FileRepository) Insert(_ context.Context,userID uuid.UUID, key, value string) error {
+func (r FileRepository) Insert(_ context.Context, userID uuid.UUID, key, value string) error {
 	// write data to local map
 	r.db[key] = value
 
@@ -430,9 +475,9 @@ func (r FileRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]api.
 	// 	return "", err
 	// }
 
-	 return []api.BatchElement{}, nil
+	return []api.BatchElement{}, nil
 }
 
-func (r FileRepository) DeleteRecords(ctx context.Context, userID uuid.UUID, recordIDs []string) error {
+func (r FileRepository) DeleteRecords(ctx context.Context, deletedItems []api.DeleteItem) error {
 	return nil
 }

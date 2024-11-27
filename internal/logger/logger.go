@@ -12,7 +12,13 @@ import (
 var Log *zap.SugaredLogger = zap.NewNop().Sugar()
 
 func Initialize() error {
-	zl, err := zap.NewProduction()
+	cfg := zap.NewProductionConfig()
+	cfg.OutputPaths = []string{
+		"/Users/alena/log/shortener.log",
+	}
+	zl, err := cfg.Build()
+
+	// zl, err := zap.NewProduction()
 	if err != nil {
 		return err
 	}

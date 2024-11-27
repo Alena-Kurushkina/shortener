@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	endpointAPI = "http://localhost:8080/api/shorten"
-	endpointAPIbatch = "http://localhost:8080/api/shorten/batch"
+	endpointAPI          = "http://localhost:8080/api/shorten"
+	endpointAPIbatch     = "http://localhost:8080/api/shorten/batch"
 	endpointAPIselectAll = "http://localhost:8080/api/user/urls"
-	endpoint = "http://localhost:8080/"
+	endpoint             = "http://localhost:8080/"
 )
 
 type resultResponse struct {
@@ -54,13 +54,13 @@ func NewClient() ShClient {
 	// выводим код ответа
 	fmt.Println("Статус-код ", resp.Status)
 	defer resp.Body.Close()
-	if resp.StatusCode!=http.StatusOK{
+	if resp.StatusCode != http.StatusOK {
 		panic("Ping failed")
 	}
 	return ShClient{client: client}
 }
 
-func (cl *ShClient) PostTextPlainRequest(){
+func (cl *ShClient) PostTextPlainRequest() {
 	requestText, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(`http://ssite.ru`))
 	if err != nil {
 		panic(err)
@@ -122,12 +122,23 @@ func (cl ShClient) PostJSONRequest() string {
 	return shortening
 }
 
-func (cl ShClient) GetTextPlainRequest(shortening string){
+func (cl ShClient) GetTextPlainRequest(id uuid.UUID, shortening string) {
 	getrequest, err := http.NewRequest(http.MethodGet, endpoint+shortening, nil)
 	if err != nil {
 		panic(err)
 	}
 	getrequest.Header.Add("Content-Type", "text/plain")
+
+	token, err := BuildJWTString(id)
+	if err != nil {
+		panic(err)
+	}
+	cookie := &http.Cookie{
+		Name:   "token",
+		Value:  token,
+		MaxAge: 300,
+	}
+	getrequest.AddCookie(cookie)
 
 	// отправляем запрос
 	origURLResponse, err := cl.client.Do(getrequest)
@@ -139,13 +150,24 @@ func (cl ShClient) GetTextPlainRequest(shortening string){
 	fmt.Println("Header Location ", origURLResponse.Header.Get("Location"))
 }
 
-func (cl ShClient) PostJSONBatchRequest(){
-	request, err := http.NewRequest(http.MethodPost, endpointAPIbatch, strings.NewReader(`[{"correlation_id":"dfgh345","original_url": "http://some-site.ru"},{"correlation_id":"kjhg1234","original_url": "http://testsite.ru"}]`))
+func (cl ShClient) PostJSONBatchRequest(id uuid.UUID, param string) {
+	request, err := http.NewRequest(http.MethodPost, endpointAPIbatch, strings.NewReader(param))
 	if err != nil {
 		panic(err)
 	}
 
 	request.Header.Add("Content-Type", "application/json")
+
+	token, err := BuildJWTString(id)
+	if err != nil {
+		panic(err)
+	}
+	cookie := &http.Cookie{
+		Name:   "token",
+		Value:  token,
+		MaxAge: 300,
+	}
+	request.AddCookie(cookie)
 
 	// отправляем запрос
 	response, err := cl.client.Do(request)
@@ -171,7 +193,7 @@ func (cl ShClient) PostJSONBatchRequest(){
 	fmt.Println("Response body", rr1)
 }
 
-func (cl ShClient) PostGzipRequest(){
+func (cl ShClient) PostGzipRequest() {
 	var requestBody bytes.Buffer
 
 	// запрос с компрессией
@@ -213,54 +235,55 @@ func (cl ShClient) PostGzipRequest(){
 }
 
 type Claims struct {
-    jwt.RegisteredClaims
-    UserID uuid.UUID
+	jwt.RegisteredClaims
+	UserID uuid.UUID
 }
 
 const TOKEN_EXP = time.Hour * 3
+
 // TODO перенести в env
 const SECRET_KEY = "secretkey"
 
 func BuildJWTString(id uuid.UUID) (string, error) {
-    // создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims {
-        RegisteredClaims: jwt.RegisteredClaims{
-            // когда создан токен
-            ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
-        },
-        // собственное утверждение
-        UserID: id,
-    })
-	_=id
-    // создаём строку токена
-    tokenString, err := token.SignedString([]byte(SECRET_KEY))
-    if err != nil {
-        return "", err
-    }
-
-    // возвращаем строку токена
-    return tokenString, nil
-} 
-
-func (cl *ShClient) PostJWTTextPlainRequest(){
-	id:=uuid.NewV4()
-	token, err:=BuildJWTString(id)
+	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			// когда создан токен
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+		},
+		// собственное утверждение
+		UserID: id,
+	})
+	_ = id
+	// создаём строку токена
+	tokenString, err := token.SignedString([]byte(SECRET_KEY))
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
-	cookie := &http.Cookie{
-        Name:   "token",
-        Value:  token,
-        MaxAge: 300,
-    }
+	// возвращаем строку токена
+	return tokenString, nil
+}
 
+func (cl *ShClient) PostJWTTextPlainRequest() {
 	requestText, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(`http://ssite.ru`))
 	if err != nil {
 		panic(err)
 	}
 	// в заголовках запроса указываем кодировку
 	requestText.Header.Add("Content-Type", "text/plain")
+
+	id := uuid.NewV4()
+	token, err := BuildJWTString(id)
+	if err != nil {
+		panic(err)
+	}
+
+	cookie := &http.Cookie{
+		Name:   "token",
+		Value:  token,
+		MaxAge: 300,
+	}
 
 	requestText.AddCookie(cookie)
 
@@ -283,7 +306,7 @@ func (cl *ShClient) PostJWTTextPlainRequest(){
 	fmt.Println(string(body))
 }
 
-func (cl ShClient) GetJSONBatchRequest(id uuid.UUID){
+func (cl ShClient) GetJSONBatchRequest(id uuid.UUID) {
 	request, err := http.NewRequest(http.MethodGet, endpointAPIselectAll, nil)
 	if err != nil {
 		panic(err)
@@ -291,8 +314,8 @@ func (cl ShClient) GetJSONBatchRequest(id uuid.UUID){
 
 	request.Header.Add("Content-Type", "application/json")
 
-	token, err:=BuildJWTString(id)
-	if err!=nil{
+	token, err := BuildJWTString(id)
+	if err != nil {
 		panic(err)
 	}
 	request.AddCookie(&http.Cookie{Name: "token", Value: token, MaxAge: 0})
@@ -307,7 +330,7 @@ func (cl ShClient) GetJSONBatchRequest(id uuid.UUID){
 	fmt.Println("Статус-код ", response.Status)
 	defer response.Body.Close()
 
-	if response.StatusCode!=http.StatusNoContent{
+	if response.StatusCode != http.StatusNoContent {
 		reader, err := gzip.NewReader(response.Body)
 		if err != nil {
 			panic(err)
@@ -330,19 +353,28 @@ func (cl ShClient) GetJSONBatchRequest(id uuid.UUID){
 	}
 }
 
-func (cl ShClient) DeleteRequest(ids []int){
-	var idStr = []string{}
-	for _,v:=range ids {
-		idStr=append(idStr, string(v))
+func (cl ShClient) DeleteRequest(ids []string, id uuid.UUID) {
+	// var idStr = []string{}
+	// for _,v:=range ids {
+	// 	idStr=append(idStr, strconv.Itoa(v))
+	// }
+	param, err := json.Marshal(ids)
+	if err != nil {
+		panic(err)
 	}
-	param:=`[`+strings.Join(idStr,",")+`]`
 
-	request, err := http.NewRequest(http.MethodDelete, endpointAPIselectAll, strings.NewReader(param))
+	request, err := http.NewRequest(http.MethodDelete, endpointAPIselectAll, bytes.NewBuffer(param))
 	if err != nil {
 		panic(err)
 	}
 
 	request.Header.Add("Content-Type", "application/json")
+
+	token, err := BuildJWTString(id)
+	if err != nil {
+		panic(err)
+	}
+	request.AddCookie(&http.Cookie{Name: "token", Value: token, MaxAge: 0})
 
 	// отправляем запрос
 	response, err := cl.client.Do(request)
@@ -361,18 +393,24 @@ func (cl ShClient) DeleteRequest(ids []int){
 }
 
 func main() {
-	cl:=NewClient()
-	
+	cl := NewClient()
+
 	//cl.PostTextPlainRequest()
 
 	//shortening:=cl.PostJSONRequest()
-	cl.GetTextPlainRequest("jkafgeyh")
+	//cl.GetTextPlainRequest("0yofl1hsoCo3nlK")
 
-	//cl.PostJSONBatchRequest()
+	id1 := uuid.NewV4()
+	cl.PostJSONBatchRequest(id1, `[{"correlation_id":"dfgh345","original_url": "http://some-site.ru"},{"correlation_id":"kjhg1234","original_url": "http://testsite.ru"}]`)
+	// id2:=uuid.NewV4()
+	// cl.PostJSONBatchRequest(id2,`[{"correlation_id":"23456tg","original_url": "http://so-site.ru"},{"correlation_id":"sghgrh4","original_url": "http://tmdssujh.ru"}]`)
 
 	// cl.PostGzipRequest()
 
 	//cl.PostJWTTextPlainRequest()
 
-	//cl.GetJSONBatchRequest(uuid.FromStringOrNil("2860ca35-5859-4cdd-8662-fe52de9fc4b1"))
+	//cl.GetJSONBatchRequest(uuid.FromStringOrNil("2240318c-b936-4795-b8e5-82d421142fc4"))
+
+	//cl.DeleteRequest([]string{"d70561a2addfe213ca3"}, uuid.FromStringOrNil("56b4fc0f-406b-48f7-9026-aa8b685762d6"))
+	//cl.GetTextPlainRequest(uuid.FromStringOrNil("56b4fc0f-406b-48f7-9026-aa8b685762d6"), "tUfUTzrkrFIyZoI")
 }

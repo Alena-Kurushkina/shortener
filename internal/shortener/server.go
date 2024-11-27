@@ -35,18 +35,19 @@ func newRouter(hi Handler) chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/ping", hi.PingDB)
+	r.Get("/{id}", hi.GetFullString)
 
-	r.Group(func(r chi.Router){
+	r.Group(func(r chi.Router) {
 		r.Use(compress.GzipMiddleware, logger.LogMiddleware, authenticator.AuthMiddleware)
 
 		r.Post("/", hi.CreateShortening)
-		r.Get("/{id}", hi.GetFullString)
+		// r.Get("/{id}", hi.GetFullString)
 		r.Get("/api/user/urls", hi.GetUserAllShortenings)
 		r.Post("/api/shorten", hi.CreateShorteningJSON)
 		r.Post("/api/shorten/batch", hi.CreateShorteningJSONBatch)
 		r.Delete("/api/user/urls", hi.DeleteRecordJSON)
 	})
-	
+
 	return r
 }
 

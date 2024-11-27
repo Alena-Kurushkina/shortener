@@ -24,7 +24,10 @@ func NewAlreadyExistError(originalURL, shortURL string) error {
 }
 
 // ErrNoUserIDInToken defines error in case of empty user ID in JWT
-var ErrNoUserIDInToken = errors.New("no user ID in JWT") 
+var ErrNoUserIDInToken = errors.New("no user ID in JWT")
 
 // ErrTokenInvalid defines error in case of invalid JWT
-var ErrTokenInvalid = errors.New("token is not valid") 
+var ErrTokenInvalid = errors.New("token is not valid")
+
+// ErrDBRecordDeleted defines error in case of requesting deleted shortening
+var ErrDBRecordDeleted = errors.New("shortening is deleted")
