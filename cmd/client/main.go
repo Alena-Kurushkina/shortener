@@ -239,24 +239,24 @@ type Claims struct {
 	UserID uuid.UUID
 }
 
-const TOKEN_EXP = time.Hour * 3
+const tokenExp = time.Hour * 3
 
 // TODO перенести в env
-const SECRET_KEY = "secretkey"
+const secretKey = "secretkey"
 
 func BuildJWTString(id uuid.UUID) (string, error) {
 	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			// когда создан токен
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
 		},
 		// собственное утверждение
 		UserID: id,
 	})
 	_ = id
 	// создаём строку токена
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", err
 	}

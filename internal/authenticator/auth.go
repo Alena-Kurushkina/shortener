@@ -19,10 +19,10 @@ type Claims struct {
 	UserID uuid.UUID
 }
 
-const TOKEN_EXP = time.Hour * 3
+const tokenExp = time.Hour * 3
 
 // TODO перенести в env
-const SECRET_KEY = "secretkey"
+const secretKey = "secretkey"
 
 // BuildJWTString создаёт токен и возвращает его в виде строки.
 func buildJWTString(id uuid.UUID) (string, error) {
@@ -30,14 +30,14 @@ func buildJWTString(id uuid.UUID) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			// когда создан токен
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
 		},
 		// собственное утверждение
 		UserID: id,
 	})
 
 	// создаём строку токена
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", err
 	}
@@ -53,7 +53,7 @@ func getUserID(tokenString string) (uuid.UUID, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
-			return []byte(SECRET_KEY), nil
+			return []byte(secretKey), nil
 		})
 	if err != nil {
 		v, _ := err.(*jwt.ValidationError)

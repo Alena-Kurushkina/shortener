@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	_ "encoding/json"
 	"errors"
 	"io"
 	"net/http"
