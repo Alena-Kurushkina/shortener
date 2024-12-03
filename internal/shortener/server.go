@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/Alena-Kurushkina/shortener/internal/authenticator"
 	"github.com/Alena-Kurushkina/shortener/internal/compress"
 	"github.com/Alena-Kurushkina/shortener/internal/config"
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
@@ -19,6 +20,8 @@ type Handler interface {
 	CreateShorteningJSON(res http.ResponseWriter, req *http.Request)
 	CreateShorteningJSONBatch(res http.ResponseWriter, req *http.Request)
 	PingDB(res http.ResponseWriter, req *http.Request)
+	GetUserAllShortenings(res http.ResponseWriter, req *http.Request)
+	DeleteRecordJSON(res http.ResponseWriter, req *http.Request)
 }
 
 // A Server aggregates handler and config
@@ -30,14 +33,20 @@ type Server struct {
 // NewRouter creates new routes and middlewares
 func newRouter(hi Handler) chi.Router {
 	r := chi.NewRouter()
-	r.Use(compress.GzipMiddleware)
-	r.Use(logger.LogMiddleware)
 
-	r.Post("/", hi.CreateShortening)
-	r.Get("/{id}", hi.GetFullString)
 	r.Get("/ping", hi.PingDB)
-	r.Post("/api/shorten", hi.CreateShorteningJSON)
-	r.Post("/api/shorten/batch", hi.CreateShorteningJSONBatch)
+	r.Get("/{id}", hi.GetFullString)
+
+	r.Group(func(r chi.Router) {
+		r.Use(compress.GzipMiddleware, logger.LogMiddleware, authenticator.AuthMiddleware)
+
+		r.Post("/", hi.CreateShortening)
+		// r.Get("/{id}", hi.GetFullString)
+		r.Get("/api/user/urls", hi.GetUserAllShortenings)
+		r.Post("/api/shorten", hi.CreateShorteningJSON)
+		r.Post("/api/shorten/batch", hi.CreateShorteningJSONBatch)
+		r.Delete("/api/user/urls", hi.DeleteRecordJSON)
+	})
 
 	return r
 }

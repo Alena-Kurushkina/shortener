@@ -39,5 +39,15 @@ shortenertest -test.v -test.run=^TestIteration10$ -binary-path=shortener -server
 
 shortenertest -test.v -test.run=^TestIteration12$ -binary-path=shortener -server-port=8080 -source-path=cmd/ -file-storage-path=/Users/alena/storage_shortener.txt -database-dsn="host=127.0.0.1 user=practicum password=123456 dbname=practicumdb sslmode=disable"
 
+shortenertest -test.v -test.run=^TestIteration14$ -binary-path=shortener -server-port=8080 -source-path=cmd/ -file-storage-path=/Users/alena/storage_shortener.txt -database-dsn="host=127.0.0.1 user=practicum password=123456 dbname=practicumdb sslmode=disable"
 
-mockgen --build_flags=--mod=mod -destination=internal/mocks/mock_store.go -package=mocks ./internal/repository Storager
+shortenertest -test.v -test.run=^TestIteration15$ -binary-path=shortener -server-port=8080 -source-path=cmd/ -file-storage-path=/Users/alena/storage_shortener.txt -database-dsn="host=127.0.0.1 user=practicum password=123456 dbname=practicumdb sslmode=disable"
+
+
+mockgen -destination=internal/mocks/mock_store.go -package=mocks internal/repository Storager
+--build_flags=--mod=mod
+
+mockgen -destination=internal/api/mock_store.go -source=internal/api/api.go Storager 
+
+flag.StringVar(&cfg.ConnectionStr, "d", fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", `127.0.0.1`, `practicum`, `123456`, `practicumdb`), "connection string to database")
+	
