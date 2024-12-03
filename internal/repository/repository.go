@@ -86,16 +86,6 @@ func (r MemoryRepository) Select(_ context.Context, key string) (string, error) 
 
 // Select returns data from storage
 func (r MemoryRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]api.BatchElement, error) {
-	// row := r.selectAllStmt.QueryRowContext(ctx,
-	// 	id,
-	// )
-	// var longURL string
-
-	// err := row.Scan(&longURL)
-	// if err != nil {
-	// 	return "", err
-	// }
-
 	return []api.BatchElement{}, nil
 }
 
@@ -197,16 +187,6 @@ func (r DBRepository) Insert(ctx context.Context, userID uuid.UUID, insertedShor
 }
 
 func (r DBRepository) DeleteRecords(ctx context.Context, deleteItems []api.DeleteItem) error {
-	//  UPDATE shortening
-	// 	SET is_deleted=true
-	// 	FROM (
-	// 		VALUES
-	// 			(uuid('0de70533-e13c-4269-bba9-e4e7653b4c72'), 'kjhg1234'),
-	// 			(uuid('0de70533-e13c-4269-bba9-e4e7653b4c72'), 'dfgh345')
-	// 	) AS data(id_user, id_record)
-	// 	WHERE shortening.useruuid=data.id_user
-	// 		AND shortening.id=data.id_record
-
 	param := ""
 	for _, v := range deleteItems {
 		for _, i := range v.IDs {
@@ -233,13 +213,6 @@ func (r DBRepository) DeleteRecords(ctx context.Context, deleteItems []api.Delet
 
 	sf, _ := sqlRes.RowsAffected()
 	logger.Log.Infof("Rows affected while deletion: %s", strconv.FormatInt(sf, 10))
-
-	// _, err := r.database.ExecContext(ctx,
-	// 	`UPDATE shortening
-	// 	SET is_deleted = true
-	// 	WHERE userUUID=$1 AND id IN ('`+strings.Join(recordIDs, "','")+`');`,
-	// 	userID,
-	// )
 
 	return err
 }
@@ -465,16 +438,6 @@ func (r FileRepository) Select(_ context.Context, key string) (string, error) {
 
 // Select returns data from storage
 func (r FileRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]api.BatchElement, error) {
-	// row := r.selectAllStmt.QueryRowContext(ctx,
-	// 	id,
-	// )
-	// var longURL string
-
-	// err := row.Scan(&longURL)
-	// if err != nil {
-	// 	return "", err
-	// }
-
 	return []api.BatchElement{}, nil
 }
 

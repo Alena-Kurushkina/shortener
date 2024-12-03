@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Alena-Kurushkina/shortener/internal/logger"
-	"github.com/Alena-Kurushkina/shortener/internal/sherr"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/satori/go.uuid"
+
+	"github.com/Alena-Kurushkina/shortener/internal/logger"
+	"github.com/Alena-Kurushkina/shortener/internal/sherr"
 )
 
 // Claims — структура утверждений, которая включает стандартные утверждения и
