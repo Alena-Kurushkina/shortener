@@ -53,7 +53,7 @@ func newShortenerObject(storage Storager, cfg *config.Config) *Shortener {
 func NewShortener(storage Storager, cfg *config.Config) shortener.Handler {
 	shortener := newShortenerObject(storage, cfg)
 
-	go shortener.flushDeleteItems()
+	go shortener.flushDeleteItemsV2()
 
 	return shortener
 }
@@ -83,6 +83,33 @@ func (sh *Shortener) flushDeleteItems() {
 			}
 			logger.Log.Info("Patch of shortenings was deleted, patch length: "+ strconv.Itoa(len(items)))
 			items = nil
+		case <-sh.done:
+			return
+		}
+	}
+}
+
+func (sh *Shortener) flushDeleteItemsV2() {
+	ticker := time.NewTicker(1 * time.Second)
+
+	items:=make([]DeleteItem,0,1024)
+
+	for {
+		select {
+		case msg := <-sh.deleteChan:
+			items = append(items, msg)
+		case <-ticker.C:
+			if len(items) == 0 {
+				continue
+			}
+			err := sh.repo.DeleteRecords(context.TODO(), items)
+			if err != nil {
+				logger.Log.Infof("Can't delete records", err.Error())
+				continue
+			}
+			logger.Log.Info("Patch of shortenings was deleted, patch length: "+ strconv.Itoa(len(items)))
+
+			items=make([]DeleteItem,0,1024)
 		case <-sh.done:
 			return
 		}
@@ -123,7 +150,7 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 	logger.Log.Infof("Handle route /, method POST, body: %s", url)
 
 	// generate shortening
-	shortStr := generateRandomString(15)
+	shortStr := generateRandomStringFaster(15)
 
 	q := req.URL.Query()
 	id, err := uuid.FromString(q.Get("userUUID"))
@@ -196,7 +223,7 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 	logger.Log.Infof("Handle route /api/shorten, method POST, body: %s", url.URL)
 
 	// generate shortening
-	shortStr := generateRandomString(15)
+	shortStr := generateRandomStringFaster(15)
 	insertErr := sh.repo.Insert(req.Context(), id, shortStr, url.URL)
 
 	var existError *sherr.AlreadyExistError
@@ -265,7 +292,7 @@ func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *htt
 	}
 	// generate shortening
 	for k := range batch {
-		batch[k].ShortURL = generateRandomString(15)
+		batch[k].ShortURL = generateRandomStringFaster(15)
 	}
 
 	q := req.URL.Query()
@@ -426,4 +453,19 @@ func generateRandomString(length int) string {
 	}
 
 	return string(result)
+}
+
+// generateRandomStringFaster returns string of random characters of passed length
+func generateRandomStringFaster(length int) string {
+	charset := []byte{97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90}
+	seed := rand.NewSource(time.Now().UnixNano())
+	random := rand.New(seed)
+
+	result := strings.Builder{}
+	result.Grow(length)
+	for i:=0; i< length; i++ {
+		result.WriteByte(charset[random.Intn(len(charset))])
+	}
+
+	return result.String()
 }

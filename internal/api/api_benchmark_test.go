@@ -28,20 +28,43 @@ func BenchmarkFlushDeleteItems(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i:=0; i<b.N; i++{
-		b.StopTimer()
-		for k:=1; k<1000; k++ {
-			sh.deleteChan <- DeleteItem{IDs: []string{strconv.Itoa(k)}, UserID: uuid.NewV4()}
-		}
-		go waitEmpty(sh)
-		b.StartTimer()
+	b.Run("flush delete items", func(b *testing.B) {
+		for i:=0; i<b.N; i++{
+			b.StopTimer()
+			for k:=1; k<1000; k++ {
+				sh.deleteChan <- DeleteItem{IDs: []string{strconv.Itoa(k)}, UserID: uuid.NewV4()}
+			}
+			go waitEmpty(sh)
+			b.StartTimer()
 
-		sh.flushDeleteItems()
-	}	
+			sh.flushDeleteItems()
+		}	
+	})
+
+	b.Run("flush delete items v2", func(b *testing.B) {
+		for i:=0; i<b.N; i++{
+			b.StopTimer()
+			for k:=1; k<1000; k++ {
+				sh.deleteChan <- DeleteItem{IDs: []string{strconv.Itoa(k)}, UserID: uuid.NewV4()}
+			}
+			go waitEmpty(sh)
+			b.StartTimer()
+
+			sh.flushDeleteItemsV2()
+		}	
+	})
+	
 }
 
 func BenchmarkGenerateRandomString(b *testing.B) {
-	for i:=0; i<b.N; i++{
-		generateRandomString(15)
-	}
+	b.Run("generate random string", func(b *testing.B){
+		for i:=0; i<b.N; i++{
+			generateRandomString(15)
+		}
+	})
+	b.Run("generate random string faster", func(b *testing.B){
+		for i:=0; i<b.N; i++{
+			generateRandomStringFaster(15)
+		}
+	})
 }

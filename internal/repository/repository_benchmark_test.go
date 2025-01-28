@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,16 +15,17 @@ import (
 )
 
 func generateRandomString(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	charset := []byte{97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90}
 	seed := rand.NewSource(time.Now().UnixNano())
 	random := rand.New(seed)
 
-	result := make([]byte, length)
-	for i := range result {
-		result[i] = charset[random.Intn(len(charset))]
+	result := strings.Builder{}
+	result.Grow(length)
+	for i:=0; i< length; i++ {
+		result.WriteByte(charset[random.Intn(len(charset))])
 	}
 
-	return string(result)
+	return result.String()
 }
 
 func BenchmarkInsertBatch(b *testing.B) {
