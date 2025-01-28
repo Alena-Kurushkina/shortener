@@ -7,17 +7,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// Log represents global var for logging
-// By default Log is no-op logger
+// Log represents global var for logging.
+// By default Log is no-op logger.
 var Log *zap.SugaredLogger = zap.NewNop().Sugar()
 
 func Initialize() error {
-	// cfg := zap.NewProductionConfig()
-	// cfg.OutputPaths = []string{
-	// 	"/Users/alena/log/shortener.log",
-	// }
-	// zl, err := cfg.Build()
-
 	zl, err := zap.NewProduction()
 	if err != nil {
 		return err
@@ -67,7 +61,7 @@ func logResponse(code, size int) {
 	)
 }
 
-// LogMiddleware realises middleware for logging requests and responses
+// LogMiddleware realises middleware for logging requests and responses.
 func LogMiddleware(h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

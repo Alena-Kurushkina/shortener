@@ -66,9 +66,9 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
-// GzipMiddleware realises middleware for requests and responses compression in gzip format
+// GzipMiddleware realises middleware for requests and responses compression in gzip format.
 // It compresses such content types as "application/json", "text/html", "application/x-gzip".
-// It avoid compression if Accept-Encoding or Content-Encoding headers which don`t contain "gzip"
+// It avoid compression if Accept-Encoding or Content-Encoding headers which don`t contain "gzip".
 func GzipMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ow := w

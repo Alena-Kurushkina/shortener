@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-// A Config serves configuration variables
+// A Config serves configuration variables.
 type Config struct {
 	BaseURL         string
 	ServerAddress   string
@@ -23,7 +23,7 @@ var (
 	once sync.Once
 )
 
-// InitConfig initialize configuration variables from flags values and environment variables
+// InitConfig initialize configuration variables from flags values and environment variables.
 func InitConfig() *Config {
 	once.Do(
 		func() {

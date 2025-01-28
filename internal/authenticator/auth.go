@@ -13,22 +13,19 @@ import (
 	"github.com/Alena-Kurushkina/shortener/internal/sherr"
 )
 
-// Claims — структура утверждений, которая включает стандартные утверждения и
-// одно пользовательское UserID
-type Claims struct {
+type claims struct {
 	jwt.RegisteredClaims
 	UserID uuid.UUID
 }
 
 const tokenExp = time.Hour * 3
 
-// TODO перенести в env
 const secretKey = "secretkey"
 
-// BuildJWTString создаёт токен и возвращает его в виде строки.
+// buildJWTString makes token and returns it as a string.
 func buildJWTString(id uuid.UUID) (string, error) {
 	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			// когда создан токен
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
@@ -48,7 +45,7 @@ func buildJWTString(id uuid.UUID) (string, error) {
 }
 
 func getUserID(tokenString string) (uuid.UUID, error) {
-	claims := &Claims{}
+	claims := &claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
 		func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -82,7 +79,9 @@ func setNewTokenInCookie(w http.ResponseWriter, userID uuid.UUID) error {
 	return nil
 }
 
-// AuthMiddleware realises middleware for user authentication
+// AuthMiddleware realises middleware for user authentication.
+// It creates new user UUID if there is no token in cookie or token is invalid.
+// Otherwise it try to get user UUID from cookie. 
 func AuthMiddleware(h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("token")

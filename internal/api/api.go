@@ -1,5 +1,5 @@
-// Package api implements handler functions for shorten long URL
-// and expanding shortenings back to long URL
+// Package api implements handler functions to shorten long URL
+// and expand shortenings back to long URL.
 package api
 
 import (
@@ -22,6 +22,7 @@ import (
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
 )
 
+// Storager defines operations with data storage.
 type Storager interface {
 	Insert(ctx context.Context, userID uuid.UUID, key, value string) error
 	InsertBatch(_ context.Context, userID uuid.UUID, batch []BatchElement) error
@@ -32,7 +33,7 @@ type Storager interface {
 	Close()
 }
 
-// A Shortener aggregates data storage and configurations
+// A Shortener aggregates data storage, configurations and helpful objects.
 type Shortener struct {
 	repo       Storager
 	config     *config.Config
@@ -49,7 +50,7 @@ func newShortenerObject(storage Storager, cfg *config.Config) *Shortener {
 	}
 }
 
-// NewShortener returns new Shortener pointer initialized by repository and config
+// NewShortener returns new Shortener pointer initialized by repository and config.
 func NewShortener(storage Storager, cfg *config.Config) shortener.Handler {
 	shortener := newShortenerObject(storage, cfg)
 
@@ -64,7 +65,7 @@ type DeleteItem struct {
 }
 
 func (sh *Shortener) flushDeleteItems() {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 
 	var items []DeleteItem
 
@@ -178,12 +179,12 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 	res.Write([]byte(sh.config.BaseURL + shortStr))
 }
 
-// A URLRequest is for request decoding from json
+// A URLRequest is for request decoding from json.
 type URLRequest struct {
 	URL string `json:"url"`
 }
 
-// A ResultResponse is for response encoding in json
+// A ResultResponse is for response encoding in json.
 type ResultResponse struct {
 	Result string `json:"result"`
 }
@@ -259,7 +260,7 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 	res.Write(responseData)
 }
 
-// A BatchElement represent structure to marshal element of request`s json array
+// A BatchElement represent structure to marshal element of request`s json array.
 type BatchElement struct {
 	CorrelarionID string `json:"correlation_id"`
 	OriginalURL   string `json:"original_url"`
@@ -323,7 +324,7 @@ func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *htt
 
 // GetFullString handle GET request with shortening in URL parameter named id
 // and makes response with long URL in header's location value.
-// Response content type is text/plain
+// Response content type is text/plain.
 func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 	// parse parameter id from URL
 	param := chi.URLParam(req, "id")
@@ -348,6 +349,8 @@ func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusTemporaryRedirect)
 }
 
+// GetUserAllShortenings handle GET request with no parameters and makes response with
+// all user's shortenings in body in json format.
 func (sh *Shortener) GetUserAllShortenings(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 
@@ -385,6 +388,9 @@ func (sh *Shortener) GetUserAllShortenings(res http.ResponseWriter, req *http.Re
 	res.WriteHeader(http.StatusOK)
 }
 
+// DeleteRecordJSON saves record's id for future deletion. It returns status Accepted on seccuss saving.
+// Deletion itself is performed periodically.
+// It handle only requests with content type application/json.
 func (sh *Shortener) DeleteRecordJSON(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 
@@ -417,17 +423,11 @@ func (sh *Shortener) DeleteRecordJSON(res http.ResponseWriter, req *http.Request
 
 	logger.Log.Info("Shortenings' ids were send to chan for deletion")
 
-	//err = sh.repo.DeleteRecords(req.Context(), id, recordIDs)
-	// if err != nil {
-	// 	http.Error(res, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-
 	// make responce
 	res.WriteHeader(http.StatusAccepted)
 }
 
-// PingDB check connection to data storage
+// PingDB check connection to data storage.
 func (sh *Shortener) PingDB(res http.ResponseWriter, req *http.Request) {
 
 	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
@@ -441,7 +441,7 @@ func (sh *Shortener) PingDB(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
-// generateRandomString returns string of random characters of passed length
+// generateRandomString returns string of random characters of passed length.
 func generateRandomString(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	seed := rand.NewSource(time.Now().UnixNano())
@@ -455,7 +455,7 @@ func generateRandomString(length int) string {
 	return string(result)
 }
 
-// generateRandomStringFaster returns string of random characters of passed length
+// generateRandomStringFaster returns string of random characters of passed length.
 func generateRandomStringFaster(length int) string {
 	charset := []byte{97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90}
 	seed := rand.NewSource(time.Now().UnixNano())

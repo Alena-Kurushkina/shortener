@@ -1,4 +1,4 @@
-// Package sherr defines errors for shortener service
+// Package sherr defines errors for shortener service.
 package sherr
 
 import (
@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-// AlreadyExistError defines error in case of creating shortening for long URL that already exist in data storage
+// AlreadyExistError defines error in case of creating shortening for long URL that already exist in data storage.
 type AlreadyExistError struct {
 	ExistShortStr    string
 	ExistOriginalURL string
@@ -23,11 +23,11 @@ func NewAlreadyExistError(originalURL, shortURL string) error {
 	}
 }
 
-// ErrNoUserIDInToken defines error in case of empty user ID in JWT
+// ErrNoUserIDInToken defines error in case of empty user ID in JWT.
 var ErrNoUserIDInToken = errors.New("no user ID in JWT")
 
-// ErrTokenInvalid defines error in case of invalid JWT
+// ErrTokenInvalid defines error in case of invalid JWT.
 var ErrTokenInvalid = errors.New("token is not valid")
 
-// ErrDBRecordDeleted defines error in case of requesting deleted shortening
+// ErrDBRecordDeleted defines error in case of requesting deleted shortening.
 var ErrDBRecordDeleted = errors.New("shortening is deleted")
