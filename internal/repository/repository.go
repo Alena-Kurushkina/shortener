@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	uuid "github.com/satori/go.uuid"
@@ -97,57 +98,71 @@ func (r *MemoryRepository) Close() {}
 
 func (r *MemoryRepository) Ping(_ context.Context) error { return nil }
 
+var GetDB func()(api.Storager, error)
+
 // newDBRepository initializes data storage in database
 func newDBRepository(ctx context.Context, connectionStr string) (api.Storager, error) {
+	
+	dbInit:=func()(api.Storager, error){
+		dbRep := &DBRepository{}
 
-	db, err := sql.Open("pgx", connectionStr)
-	if err != nil {
-		return nil, err
+		db, err := sql.Open("pgx", connectionStr)
+		if err != nil {
+			return nil, err
+		}
+		logger.Log.Info("DB connection opened")
+
+		tx, err := db.BeginTx(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		defer tx.Rollback()
+
+		tx.ExecContext(ctx, `
+			CREATE TABLE IF NOT EXISTS shortening(
+				id varchar(50) PRIMARY KEY default substring(md5(random()::text),0,20),
+				originalURL varchar(500) NOT NULL,
+				shortURL varchar(250) NOT NULL,
+				userUUID uuid,
+				is_deleted bool DEFAULT(false),
+				UNIQUE (originalURL)
+			);
+			CREATE UNIQUE INDEX IF NOT EXISTS short_idx on shortening (shortURL);
+		`)
+
+		err = tx.Commit()
+		if err != nil {
+			return nil, err
+		}
+
+		stmt1, err := db.PrepareContext(ctx, `
+			SELECT originalURL, is_deleted 
+			FROM shortening 
+			WHERE shortURL LIKE $1
+		`)
+		if err != nil {
+			return nil, err
+		}
+
+		stmt2, err := db.PrepareContext(ctx, `
+			SELECT originalURL, shortURL
+			FROM shortening 
+			WHERE shortening.useruuid = $1
+		`)
+		if err != nil {
+			return nil, err
+		}
+
+		dbRep.database=db
+		dbRep.selectStmt=stmt1
+		dbRep.selectAllStmt=stmt2
+
+		return dbRep, nil
 	}
-	logger.Log.Info("DB connection opened")
 
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
+	GetDB=sync.OnceValues(dbInit)
 
-	tx.ExecContext(ctx, `
-		CREATE TABLE IF NOT EXISTS shortening(
-			id varchar(50) PRIMARY KEY default substring(md5(random()::text),0,20),
-			originalURL varchar(500) NOT NULL,
-			shortURL varchar(250) NOT NULL,
-			userUUID uuid,
-			is_deleted bool DEFAULT(false),
-			UNIQUE (originalURL)
-		);
-		CREATE UNIQUE INDEX IF NOT EXISTS short_idx on shortening (shortURL);
-	`)
-
-	err = tx.Commit()
-	if err != nil {
-		return nil, err
-	}
-
-	stmt1, err := db.PrepareContext(ctx, `
-		SELECT originalURL, is_deleted 
-		FROM shortening 
-		WHERE shortURL LIKE $1
-	`)
-	if err != nil {
-		return nil, err
-	}
-
-	stmt2, err := db.PrepareContext(ctx, `
-		SELECT originalURL, shortURL
-		FROM shortening 
-		WHERE shortening.useruuid = $1
-	`)
-	if err != nil {
-		return nil, err
-	}
-
-	return &DBRepository{database: db, selectStmt: stmt1, selectAllStmt: stmt2}, nil
+	return GetDB()
 }
 
 // Insert adds data to storage
