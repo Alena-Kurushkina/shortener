@@ -9,6 +9,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,19 +37,25 @@ type Shortener struct {
 	repo       Storager
 	config     *config.Config
 	deleteChan chan DeleteItem
+	done chan struct{}
+}
+
+func newShortenerObject(storage Storager, cfg *config.Config) *Shortener {
+	return &Shortener{
+		repo:       storage,
+		config:     cfg,
+		deleteChan: make(chan DeleteItem, 1024),
+		done: make(chan struct{}, 1),
+	}
 }
 
 // NewShortener returns new Shortener pointer initialized by repository and config
 func NewShortener(storage Storager, cfg *config.Config) shortener.Handler {
-	shortener := Shortener{
-		repo:       storage,
-		config:     cfg,
-		deleteChan: make(chan DeleteItem, 1024),
-	}
+	shortener := newShortenerObject(storage, cfg)
 
 	go shortener.flushDeleteItems()
 
-	return &shortener
+	return shortener
 }
 
 type DeleteItem struct {
@@ -57,7 +64,7 @@ type DeleteItem struct {
 }
 
 func (sh *Shortener) flushDeleteItems() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
 
 	var items []DeleteItem
 
@@ -74,9 +81,10 @@ func (sh *Shortener) flushDeleteItems() {
 				logger.Log.Infof("Can't delete records", err.Error())
 				continue
 			}
-			logger.Log.Info("Patch of shortenings was deleted")
+			logger.Log.Info("Patch of shortenings was deleted, patch length: "+ strconv.Itoa(len(items)))
 			items = nil
-
+		case <-sh.done:
+			return
 		}
 	}
 }

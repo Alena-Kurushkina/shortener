@@ -87,8 +87,7 @@ func AuthMiddleware(h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("token")
 		if err != nil {
-			switch {
-			case errors.Is(err, http.ErrNoCookie):
+			if errors.Is(err, http.ErrNoCookie){
 				logger.Log.Infof("No cookie in request, method %s", r.Method)
 
 				if r.Method != http.MethodPost {
@@ -110,7 +109,7 @@ func AuthMiddleware(h http.Handler) http.Handler {
 
 				h.ServeHTTP(w, r)
 				return
-			default:
+			} else {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}

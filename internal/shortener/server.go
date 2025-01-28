@@ -4,6 +4,7 @@ package shortener
 
 import (
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/go-chi/chi/v5"
 
@@ -36,6 +37,10 @@ func newRouter(hi Handler) chi.Router {
 
 	r.Get("/ping", hi.PingDB)
 	r.Get("/{id}", hi.GetFullString)
+
+	r.Get("/debug/pprof/", pprof.Index)
+	r.Get("/debug/pprof/profile", pprof.Profile)
+	r.Get("/debug/pprof/heap", pprof.Handler("heap").ServeHTTP)
 
 	r.Group(func(r chi.Router) {
 		r.Use(compress.GzipMiddleware, logger.LogMiddleware, authenticator.AuthMiddleware)
