@@ -19,19 +19,19 @@ type Config struct {
 }
 
 var (
-	cfg *Config
+	cfg  *Config
 	once sync.Once
 )
 
 // InitConfig initialize configuration variables from flags values and environment variables
 func InitConfig() *Config {
 	once.Do(
-		func(){
+		func() {
 			cfg = &Config{}
 
 			// define flags
 			flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "address of HTTP server")
-			flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080", "base address of shorten URL")	
+			flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080", "base address of shorten URL")
 			flag.StringVar(&cfg.FileStoragePath, "f", "", "path to storage file")
 			flag.StringVar(&cfg.ConnectionStr, "d", "", "connection string to database")
 

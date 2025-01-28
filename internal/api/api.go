@@ -37,7 +37,7 @@ type Shortener struct {
 	repo       Storager
 	config     *config.Config
 	deleteChan chan DeleteItem
-	done chan struct{}
+	done       chan struct{}
 }
 
 func newShortenerObject(storage Storager, cfg *config.Config) *Shortener {
@@ -45,7 +45,7 @@ func newShortenerObject(storage Storager, cfg *config.Config) *Shortener {
 		repo:       storage,
 		config:     cfg,
 		deleteChan: make(chan DeleteItem, 1024),
-		done: make(chan struct{}, 1),
+		done:       make(chan struct{}, 1),
 	}
 }
 
@@ -81,7 +81,7 @@ func (sh *Shortener) flushDeleteItems() {
 				logger.Log.Infof("Can't delete records", err.Error())
 				continue
 			}
-			logger.Log.Info("Patch of shortenings was deleted, patch length: "+ strconv.Itoa(len(items)))
+			logger.Log.Info("Patch of shortenings was deleted, patch length: " + strconv.Itoa(len(items)))
 			items = nil
 		case <-sh.done:
 			return
@@ -92,7 +92,7 @@ func (sh *Shortener) flushDeleteItems() {
 func (sh *Shortener) flushDeleteItemsV2() {
 	ticker := time.NewTicker(1 * time.Second)
 
-	items:=make([]DeleteItem,0,1024)
+	items := make([]DeleteItem, 0, 1024)
 
 	for {
 		select {
@@ -107,9 +107,9 @@ func (sh *Shortener) flushDeleteItemsV2() {
 				logger.Log.Infof("Can't delete records", err.Error())
 				continue
 			}
-			logger.Log.Info("Patch of shortenings was deleted, patch length: "+ strconv.Itoa(len(items)))
+			logger.Log.Info("Patch of shortenings was deleted, patch length: " + strconv.Itoa(len(items)))
 
-			items=make([]DeleteItem,0,1024)
+			items = make([]DeleteItem, 0, 1024)
 		case <-sh.done:
 			return
 		}
@@ -463,7 +463,7 @@ func generateRandomStringFaster(length int) string {
 
 	result := strings.Builder{}
 	result.Grow(length)
-	for i:=0; i< length; i++ {
+	for i := 0; i < length; i++ {
 		result.WriteByte(charset[random.Intn(len(charset))])
 	}
 

@@ -5,7 +5,7 @@ import (
 	_ "net/http/pprof"
 
 	_ "github.com/golang/mock/mockgen/model"
-	
+
 	"github.com/Alena-Kurushkina/shortener/internal/api"
 	"github.com/Alena-Kurushkina/shortener/internal/config"
 	"github.com/Alena-Kurushkina/shortener/internal/logger"

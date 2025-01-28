@@ -9,15 +9,15 @@ import (
 )
 
 func BenchmarkAuthMiddleware(b *testing.B) {
-	nextHandler:=http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){})
-	authHandler:=AuthMiddleware(nextHandler)
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	authHandler := AuthMiddleware(nextHandler)
 
-	req, err:=http.NewRequest("POST", "http://test",nil)
-	assert.NoError(b,err)
+	req, err := http.NewRequest("POST", "http://test", nil)
+	assert.NoError(b, err)
 
 	b.ResetTimer()
 
-	for i:=0; i<b.N; i++{
-		authHandler.ServeHTTP(httptest.NewRecorder(),req)
+	for i := 0; i < b.N; i++ {
+		authHandler.ServeHTTP(httptest.NewRecorder(), req)
 	}
 }

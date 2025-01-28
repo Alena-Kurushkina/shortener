@@ -98,12 +98,12 @@ func (r *MemoryRepository) Close() {}
 
 func (r *MemoryRepository) Ping(_ context.Context) error { return nil }
 
-var GetDB func()(api.Storager, error)
+var GetDB func() (api.Storager, error)
 
 // newDBRepository initializes data storage in database
 func newDBRepository(ctx context.Context, connectionStr string) (api.Storager, error) {
-	
-	dbInit:=func()(api.Storager, error){
+
+	dbInit := func() (api.Storager, error) {
 		dbRep := &DBRepository{}
 
 		db, err := sql.Open("pgx", connectionStr)
@@ -153,14 +153,14 @@ func newDBRepository(ctx context.Context, connectionStr string) (api.Storager, e
 			return nil, err
 		}
 
-		dbRep.database=db
-		dbRep.selectStmt=stmt1
-		dbRep.selectAllStmt=stmt2
+		dbRep.database = db
+		dbRep.selectStmt = stmt1
+		dbRep.selectAllStmt = stmt2
 
 		return dbRep, nil
 	}
 
-	GetDB=sync.OnceValues(dbInit)
+	GetDB = sync.OnceValues(dbInit)
 
 	return GetDB()
 }
