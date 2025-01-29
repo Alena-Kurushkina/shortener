@@ -12,10 +12,12 @@ type AlreadyExistError struct {
 	ExistOriginalURL string
 }
 
+// Error gives string representation of error in output.
 func (ex *AlreadyExistError) Error() string {
 	return fmt.Sprintf("You are trying to shorten URL %s that already has shortening %s", ex.ExistOriginalURL, ex.ExistShortStr)
 }
 
+// NewAlreadyExistError creates AlreadyExistError.
 func NewAlreadyExistError(originalURL, shortURL string) error {
 	return &AlreadyExistError{
 		ExistShortStr:    shortURL,

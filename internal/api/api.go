@@ -59,6 +59,7 @@ func NewShortener(storage Storager, cfg *config.Config) shortener.Handler {
 	return shortener
 }
 
+// DeleteItem represents pair of ids which identify unique record to delete.
 type DeleteItem struct {
 	IDs    []string
 	UserID uuid.UUID

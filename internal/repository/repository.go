@@ -90,14 +90,18 @@ func (r MemoryRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]ap
 	return []api.BatchElement{}, nil
 }
 
+// DeleteRecords delete data from storage.
 func (r MemoryRepository) DeleteRecords(ctx context.Context, deleteItems []api.DeleteItem) error {
 	return nil
 }
 
+// Close satisfies the interface.
 func (r *MemoryRepository) Close() {}
 
+// Ping satisfies the interface.
 func (r *MemoryRepository) Ping(_ context.Context) error { return nil }
 
+// GetDB creates DBRepository object in first call, then returns it with no recreation.
 var GetDB func() (api.Storager, error)
 
 // newDBRepository initializes data storage in database.
@@ -269,11 +273,14 @@ func (r DBRepository) InsertBatch(ctx context.Context, userID uuid.UUID, batch [
 	return tx.Commit()
 }
 
+// Close closes all statements and database.
 func (r *DBRepository) Close() {
 	r.selectStmt.Close()
+	r.selectAllStmt.Close()
 	r.database.Close()
 }
 
+// Ping verifies database connection.
 func (r *DBRepository) Ping(ctx context.Context) error {
 	return r.database.PingContext(ctx)
 }
@@ -364,8 +371,10 @@ func newFileRepository(filename string) (api.Storager, error) {
 	return &db, nil
 }
 
+// Close satisfies interface.
 func (r *FileRepository) Close() {}
 
+// Ping satisfies interface.
 func (r *FileRepository) Ping(_ context.Context) error { return nil }
 
 // A record sets data representation in file.
