@@ -81,7 +81,7 @@ func setNewTokenInCookie(w http.ResponseWriter, userID uuid.UUID) error {
 
 // AuthMiddleware realises middleware for user authentication.
 // It creates new user UUID if there is no token in cookie or token is invalid.
-// Otherwise it try to get user UUID from cookie. 
+// Otherwise it try to get user UUID from cookie.
 func AuthMiddleware(h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("token")

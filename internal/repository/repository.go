@@ -202,7 +202,7 @@ func (r DBRepository) Insert(ctx context.Context, userID uuid.UUID, insertedShor
 	return tx.Commit()
 }
 
-// DeleteRecords deletes records by their ids from storage. 
+// DeleteRecords deletes records by their ids from storage.
 // It is getting array of DeleteItem on input.
 func (r DBRepository) DeleteRecords(ctx context.Context, deleteItems []api.DeleteItem) error {
 	param := ""
@@ -459,7 +459,7 @@ func (r FileRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]api.
 	return []api.BatchElement{}, nil
 }
 
-//DeleteRecords deletes data from storage.
+// DeleteRecords deletes data from storage.
 func (r FileRepository) DeleteRecords(ctx context.Context, deletedItems []api.DeleteItem) error {
 	return nil
 }

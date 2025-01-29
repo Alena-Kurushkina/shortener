@@ -8,9 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Alena-Kurushkina/shortener/internal/config"
 	"github.com/golang-jwt/jwt/v4"
 	uuid "github.com/satori/go.uuid"
+
+	"github.com/Alena-Kurushkina/shortener/internal/config"
 )
 
 const (
@@ -28,12 +29,12 @@ type claims struct {
 	UserID uuid.UUID
 }
 
-func buildJWTString(id uuid.UUID) (string, error) {	
+func buildJWTString(id uuid.UUID) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			
+
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 3)),
-		},		
+		},
 		UserID: id,
 	})
 
@@ -45,7 +46,7 @@ func buildJWTString(id uuid.UUID) (string, error) {
 	return tokenString, nil
 }
 
-func makeCookie(uuid uuid.UUID) *http.Cookie{
+func makeCookie(uuid uuid.UUID) *http.Cookie {
 	token, err := buildJWTString(uuid)
 	if err != nil {
 		panic(err)
@@ -64,15 +65,15 @@ func Example() {
 		// stop redirects
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
-	}}
+		}}
 
 	// get config parameters
-	cfg:=config.InitConfig()
+	cfg := config.InitConfig()
 
 	// make POST request to endpoint /api/shorten with long url in JSON format
 	request, err := http.NewRequest(
-		http.MethodPost, 
-		"http://"+cfg.ServerAddress+endpointAPI, 
+		http.MethodPost,
+		"http://"+cfg.ServerAddress+endpointAPI,
 		strings.NewReader(`{"url": "http://site.example.ru/long/long/long/long/long/url"}`),
 	)
 	if err != nil {
@@ -82,9 +83,9 @@ func Example() {
 	request.Header.Add("Content-Type", "application/json")
 	request.Header.Add("Accept-Encoding", "identity")
 
-	// generate id and place it in cookie 
-	id:=uuid.NewV4()
-	cookie:=makeCookie(id)
+	// generate id and place it in cookie
+	id := uuid.NewV4()
+	cookie := makeCookie(id)
 	request.AddCookie(cookie)
 
 	// send request
@@ -109,7 +110,7 @@ func Example() {
 		fmt.Println("Error while decoding response", err.Error())
 		return
 	}
-	
+
 	// get shortening
 	shortening, _ := strings.CutPrefix(rr.Result, cfg.BaseURL)
 
