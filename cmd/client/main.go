@@ -129,7 +129,7 @@ func (cl shClient) getTextPlainRequest(id uuid.UUID, shortening string) {
 	}
 	getrequest.Header.Add("Content-Type", "text/plain")
 
-	token, err := BuildJWTString(id)
+	token, err := buildJWTString(id)
 	if err != nil {
 		panic(err)
 	}
@@ -158,7 +158,7 @@ func (cl shClient) postJSONBatchRequest(id uuid.UUID, param string) {
 
 	request.Header.Add("Content-Type", "application/json")
 
-	token, err := BuildJWTString(id)
+	token, err := buildJWTString(id)
 	if err != nil {
 		panic(err)
 	}
