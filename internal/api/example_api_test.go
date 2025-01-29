@@ -10,7 +10,6 @@ import (
 
 	"github.com/Alena-Kurushkina/shortener/internal/config"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 )
 
