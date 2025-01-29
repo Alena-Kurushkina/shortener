@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 )
+
 // compressWriter defines object for compressing output responces.
 type compressWriter struct {
 	w  http.ResponseWriter
