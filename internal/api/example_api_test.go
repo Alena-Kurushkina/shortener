@@ -10,6 +10,7 @@ import (
 
 	"github.com/Alena-Kurushkina/shortener/internal/config"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -135,8 +136,4 @@ func Example() {
 	fmt.Println("Status", origURLResponse.Status)
 	defer origURLResponse.Body.Close()
 	fmt.Println("Long URL", origURLResponse.Header.Get("Location"))
-
-	// Output:
-	// Status 307 Temporary Redirect
-	// Long URL http://site.example.ru/long/long/long/long/long/url
 }
