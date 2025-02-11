@@ -33,7 +33,7 @@ func InitConfig() *Config {
 			flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "address of HTTP server")
 			flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080", "base address of shorten URL")
 			flag.StringVar(&cfg.FileStoragePath, "f", "", "path to storage file")
-			flag.StringVar(&cfg.ConnectionStr, "d", "", "connection string to database")
+			flag.StringVar(&cfg.ConnectionStr, "d", "host=localhost user=practicum password=123456 dbname=practicumdb sslmode=disable", "connection string to database")
 
 			// parse flags
 			flag.Parse()

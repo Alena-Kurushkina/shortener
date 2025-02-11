@@ -40,11 +40,7 @@ func newDBRepository(ctx context.Context, connectionStr string) (dbRep api.Stora
 		if err != nil {
 			return nil, err
 		}
-		defer func(){
-			if tErr:=tx.Rollback(); tErr!=nil{
-				err=tErr
-			}
-		}()
+		defer tx.Rollback()
 
 		tx.ExecContext(ctx, `
 			CREATE TABLE IF NOT EXISTS shortening(
@@ -100,11 +96,7 @@ func (r DBRepository) Insert(ctx context.Context, userID uuid.UUID, insertedShor
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if tErr:=tx.Rollback(); tErr!=nil{
-			err=tErr
-		}
-	}()
+	defer tx.Rollback()
 
 	sqlRow := tx.QueryRowContext(ctx,
 		`INSERT INTO shortening (userUUID, originalURL, shortURL) 
@@ -175,11 +167,7 @@ func (r DBRepository) InsertBatch(ctx context.Context, userID uuid.UUID, batch [
 	if err != nil {
 		return err
 	}
-	defer func(){
-		if tErr:=tx.Rollback(); tErr!=nil{
-			err=tErr
-		}
-	}()
+	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx, `
 		INSERT INTO shortening (id, userUUID, originalURL, shortURL) 
