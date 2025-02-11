@@ -1,4 +1,4 @@
-// Package repository implements routines for manipulating data source
+// Package repository implements routines for manipulating data source.
 package repository
 
 import (
@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	uuid "github.com/satori/go.uuid"
@@ -20,25 +21,25 @@ import (
 	"github.com/Alena-Kurushkina/shortener/internal/sherr"
 )
 
-// A FileRepository represents a file data storage
+// A FileRepository represents a file data storage.
 type FileRepository struct {
 	db       map[string]string
 	filename string
 }
 
-// A MemoryRepository represents a memory data storage
+// A MemoryRepository represents a memory data storage.
 type MemoryRepository struct {
 	db map[string]string
 }
 
-// A DBRepository store data in database
+// A DBRepository store data in database.
 type DBRepository struct {
 	database      *sql.DB
 	selectStmt    *sql.Stmt
 	selectAllStmt *sql.Stmt
 }
 
-// NewRepository defines data storage depending on passed config parameters
+// NewRepository defines data storage depending on passed config parameters.
 func NewRepository(ctx context.Context, config *config.Config) (api.Storager, error) {
 	if config.ConnectionStr != "" {
 		logger.Log.Info("Database is used as data storage")
@@ -52,7 +53,7 @@ func NewRepository(ctx context.Context, config *config.Config) (api.Storager, er
 	return newMemoryRepository()
 }
 
-// newMemoryRepository initializes data storage in memory
+// newMemoryRepository initializes data storage in memory.
 func newMemoryRepository() (api.Storager, error) {
 	db := MemoryRepository{
 		db: make(map[string]string),
@@ -60,14 +61,14 @@ func newMemoryRepository() (api.Storager, error) {
 	return &db, nil
 }
 
-// Insert adds data to storage
+// Insert adds data to storage.
 func (r MemoryRepository) Insert(_ context.Context, id uuid.UUID, key, value string) error {
 	r.db[key] = value
 
 	return nil
 }
 
-// InsertBatch adds array of data to storage
+// InsertBatch adds array of data to storage.
 func (r MemoryRepository) InsertBatch(_ context.Context, id uuid.UUID, batch []api.BatchElement) error {
 	for _, v := range batch {
 		r.db[v.ShortURL] = v.OriginalURL
@@ -76,7 +77,7 @@ func (r MemoryRepository) InsertBatch(_ context.Context, id uuid.UUID, batch []a
 	return nil
 }
 
-// Select returns data from storage
+// Select returns data from storage.
 func (r MemoryRepository) Select(_ context.Context, key string) (string, error) {
 	if v, ok := r.db[key]; ok {
 		return v, nil
@@ -84,73 +85,92 @@ func (r MemoryRepository) Select(_ context.Context, key string) (string, error) 
 	return "", fmt.Errorf("can't find value of key")
 }
 
-// Select returns data from storage
+// Select returns data from storage.
 func (r MemoryRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]api.BatchElement, error) {
 	return []api.BatchElement{}, nil
 }
 
+// DeleteRecords delete data from storage.
 func (r MemoryRepository) DeleteRecords(ctx context.Context, deleteItems []api.DeleteItem) error {
 	return nil
 }
 
+// Close satisfies the interface.
 func (r *MemoryRepository) Close() {}
 
+// Ping satisfies the interface.
 func (r *MemoryRepository) Ping(_ context.Context) error { return nil }
 
-// newDBRepository initializes data storage in database
+// GetDB creates DBRepository object in first call, then returns it with no recreation.
+var GetDB func() (api.Storager, error)
+
+// newDBRepository initializes data storage in database.
 func newDBRepository(ctx context.Context, connectionStr string) (api.Storager, error) {
 
-	db, err := sql.Open("pgx", connectionStr)
-	if err != nil {
-		return nil, err
+	dbInit := func() (api.Storager, error) {
+		dbRep := &DBRepository{}
+
+		db, err := sql.Open("pgx", connectionStr)
+		if err != nil {
+			return nil, err
+		}
+		logger.Log.Info("DB connection opened")
+
+		tx, err := db.BeginTx(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		defer tx.Rollback()
+
+		tx.ExecContext(ctx, `
+			CREATE TABLE IF NOT EXISTS shortening(
+				id varchar(50) PRIMARY KEY default substring(md5(random()::text),0,20),
+				originalURL varchar(500) NOT NULL,
+				shortURL varchar(250) NOT NULL,
+				userUUID uuid,
+				is_deleted bool DEFAULT(false),
+				UNIQUE (originalURL)
+			);
+			CREATE UNIQUE INDEX IF NOT EXISTS short_idx on shortening (shortURL);
+		`)
+
+		err = tx.Commit()
+		if err != nil {
+			return nil, err
+		}
+
+		stmt1, err := db.PrepareContext(ctx, `
+			SELECT originalURL, is_deleted 
+			FROM shortening 
+			WHERE shortURL LIKE $1
+		`)
+		if err != nil {
+			return nil, err
+		}
+
+		stmt2, err := db.PrepareContext(ctx, `
+			SELECT originalURL, shortURL
+			FROM shortening 
+			WHERE shortening.useruuid = $1
+		`)
+		if err != nil {
+			return nil, err
+		}
+
+		dbRep.database = db
+		dbRep.selectStmt = stmt1
+		dbRep.selectAllStmt = stmt2
+
+		return dbRep, nil
 	}
-	logger.Log.Info("DB connection opened")
 
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
+	GetDB = sync.OnceValues(dbInit)
 
-	tx.ExecContext(ctx, `
-		CREATE TABLE IF NOT EXISTS shortening(
-			id varchar(50) PRIMARY KEY default substring(md5(random()::text),0,20),
-			originalURL varchar(500) NOT NULL,
-			shortURL varchar(250) NOT NULL,
-			userUUID uuid,
-			is_deleted bool DEFAULT(false),
-			UNIQUE (originalURL)
-		);
-		CREATE UNIQUE INDEX IF NOT EXISTS short_idx on shortening (shortURL);
-	`)
-
-	err = tx.Commit()
-	if err != nil {
-		return nil, err
-	}
-
-	stmt1, err := db.PrepareContext(ctx, `
-		SELECT originalURL, is_deleted 
-		FROM shortening 
-		WHERE shortURL LIKE $1
-	`)
-	if err != nil {
-		return nil, err
-	}
-
-	stmt2, err := db.PrepareContext(ctx, `
-		SELECT originalURL, shortURL
-		FROM shortening 
-		WHERE shortening.useruuid = $1
-	`)
-	if err != nil {
-		return nil, err
-	}
-
-	return &DBRepository{database: db, selectStmt: stmt1, selectAllStmt: stmt2}, nil
+	return GetDB()
 }
 
-// Insert adds data to storage
+// Insert saves short URL and original one to storage by user id.
+// It returns AlreadyExistError if short URL is already in storage.
 func (r DBRepository) Insert(ctx context.Context, userID uuid.UUID, insertedShortURL, insertedOriginalURL string) error {
 	tx, err := r.database.BeginTx(ctx, nil)
 	if err != nil {
@@ -186,6 +206,8 @@ func (r DBRepository) Insert(ctx context.Context, userID uuid.UUID, insertedShor
 	return tx.Commit()
 }
 
+// DeleteRecords deletes records by their ids from storage.
+// It is getting array of DeleteItem on input.
 func (r DBRepository) DeleteRecords(ctx context.Context, deleteItems []api.DeleteItem) error {
 	param := ""
 	for _, v := range deleteItems {
@@ -217,7 +239,7 @@ func (r DBRepository) DeleteRecords(ctx context.Context, deleteItems []api.Delet
 	return err
 }
 
-// InsertBatch adds array of data to storage
+// InsertBatch saves array of BatchElement to storage.
 func (r DBRepository) InsertBatch(ctx context.Context, userID uuid.UUID, batch []api.BatchElement) error {
 	tx, err := r.database.BeginTx(ctx, nil)
 	if err != nil {
@@ -251,16 +273,19 @@ func (r DBRepository) InsertBatch(ctx context.Context, userID uuid.UUID, batch [
 	return tx.Commit()
 }
 
+// Close closes all statements and database.
 func (r *DBRepository) Close() {
 	r.selectStmt.Close()
+	r.selectAllStmt.Close()
 	r.database.Close()
 }
 
+// Ping verifies database connection.
 func (r *DBRepository) Ping(ctx context.Context) error {
 	return r.database.PingContext(ctx)
 }
 
-// Select returns data from storage
+// Select returns longURL from storage by it shortening.
 func (r DBRepository) Select(ctx context.Context, key string) (string, error) {
 	row := r.selectStmt.QueryRowContext(ctx,
 		key,
@@ -281,7 +306,7 @@ func (r DBRepository) Select(ctx context.Context, key string) (string, error) {
 	return longURL, nil
 }
 
-// Select returns data from storage
+// SelectUserAll returns all user's pairs of long URL and shortening from storage.
 func (r DBRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]api.BatchElement, error) {
 	rows, err := r.selectAllStmt.QueryContext(ctx,
 		id.String(),
@@ -312,7 +337,7 @@ func (r DBRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]api.Ba
 	return records, nil
 }
 
-// newFileRepository initializes data storage in file
+// newFileRepository initializes data storage in file.
 func newFileRepository(filename string) (api.Storager, error) {
 	// open storage file to read
 	file, err := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0666)
@@ -346,18 +371,20 @@ func newFileRepository(filename string) (api.Storager, error) {
 	return &db, nil
 }
 
+// Close satisfies interface.
 func (r *FileRepository) Close() {}
 
+// Ping satisfies interface.
 func (r *FileRepository) Ping(_ context.Context) error { return nil }
 
-// A record set data representation in file
+// A record sets data representation in file.
 type record struct {
 	UUID        uuid.UUID `json:"uuid"`
 	ShortURL    string    `json:"short_url"`
 	OriginalURL string    `json:"original_url"`
 }
 
-// Insert adds array of data to storage
+// InsertBatch adds array of data to storage.
 func (r FileRepository) InsertBatch(_ context.Context, userID uuid.UUID, batch []api.BatchElement) error {
 	// open file
 	file, err := os.OpenFile(r.filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|os.O_APPEND, 0666)
@@ -393,7 +420,7 @@ func (r FileRepository) InsertBatch(_ context.Context, userID uuid.UUID, batch [
 	return nil
 }
 
-// Insert adds data to storage
+// Insert adds data to storage.
 func (r FileRepository) Insert(_ context.Context, userID uuid.UUID, key, value string) error {
 	// write data to local map
 	r.db[key] = value
@@ -428,7 +455,7 @@ func (r FileRepository) Insert(_ context.Context, userID uuid.UUID, key, value s
 	return nil
 }
 
-// Select returns data from storage
+// Select returns data from storage.
 func (r FileRepository) Select(_ context.Context, key string) (string, error) {
 	if v, ok := r.db[key]; ok {
 		return v, nil
@@ -436,11 +463,12 @@ func (r FileRepository) Select(_ context.Context, key string) (string, error) {
 	return "", fmt.Errorf("can't find value of key")
 }
 
-// Select returns data from storage
+// SelectUserAll returns data from storage.
 func (r FileRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]api.BatchElement, error) {
 	return []api.BatchElement{}, nil
 }
 
+// DeleteRecords deletes data from storage.
 func (r FileRepository) DeleteRecords(ctx context.Context, deletedItems []api.DeleteItem) error {
 	return nil
 }

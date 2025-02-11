@@ -1,3 +1,4 @@
+// Package compress realises middleware for responces compression and requests decompression.
 package compress
 
 import (
@@ -7,11 +8,13 @@ import (
 	"strings"
 )
 
+// compressWriter defines object for compressing output responces.
 type compressWriter struct {
 	w  http.ResponseWriter
 	zw *gzip.Writer
 }
 
+// NewCompressWriter construct compressWriter.
 func NewCompressWriter(w http.ResponseWriter) *compressWriter {
 	return &compressWriter{
 		w:  w,
@@ -19,10 +22,12 @@ func NewCompressWriter(w http.ResponseWriter) *compressWriter {
 	}
 }
 
+// Header redefines func Header of http.ResponseWriter.
 func (c *compressWriter) Header() http.Header {
 	return c.w.Header()
 }
 
+// WriteHeader redefines func WriteHeader of http.ResponseWriter.
 func (c *compressWriter) WriteHeader(statusCode int) {
 	if statusCode < 300 {
 		c.w.Header().Set("Content-Encoding", "gzip")
@@ -30,19 +35,23 @@ func (c *compressWriter) WriteHeader(statusCode int) {
 	c.w.WriteHeader(statusCode)
 }
 
+// Write redefines func Write of http.ResponseWriter.
 func (c *compressWriter) Write(p []byte) (int, error) {
 	return c.zw.Write(p)
 }
 
+// Close redefines func Close of http.ResponseWriter.
 func (c *compressWriter) Close() error {
 	return c.zw.Close()
 }
 
+// compressReader defines object for decompressing income requests.
 type compressReader struct {
 	r  io.ReadCloser
 	zr *gzip.Reader
 }
 
+// NewCompressReader construct compressReader.
 func NewCompressReader(r io.ReadCloser) (*compressReader, error) {
 	zr, err := gzip.NewReader(r)
 	if err != nil {
@@ -55,10 +64,12 @@ func NewCompressReader(r io.ReadCloser) (*compressReader, error) {
 	}, nil
 }
 
+// Read redefine Read method of io.ReadCloser.
 func (c compressReader) Read(p []byte) (n int, err error) {
 	return c.zr.Read(p)
 }
 
+// Close redefine Close method of io.ReadCloser.
 func (c *compressReader) Close() error {
 	if err := c.r.Close(); err != nil {
 		return err
@@ -66,9 +77,9 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
-// GzipMiddleware realises middleware for requests and responses compression in gzip format
+// GzipMiddleware realises middleware for requests and responses compression in gzip format.
 // It compresses such content types as "application/json", "text/html", "application/x-gzip".
-// It avoid compression if Accept-Encoding or Content-Encoding headers which don`t contain "gzip"
+// It avoid compression if Accept-Encoding or Content-Encoding headers which don`t contain "gzip".
 func GzipMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ow := w

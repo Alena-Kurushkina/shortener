@@ -30,11 +30,11 @@ type batchElement struct {
 	OriginalURL   string `json:"original_url"`
 	ShortURL      string `json:"short_url,omitempty"`
 }
-type ShClient struct {
+type shClient struct {
 	client *http.Client
 }
 
-func NewClient() ShClient {
+func newClient() shClient {
 	// добавляем HTTP-клиент
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -57,10 +57,10 @@ func NewClient() ShClient {
 	if resp.StatusCode != http.StatusOK {
 		panic("Ping failed")
 	}
-	return ShClient{client: client}
+	return shClient{client: client}
 }
 
-func (cl *ShClient) PostTextPlainRequest() {
+func (cl *shClient) postTextPlainRequest() {
 	requestText, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(`http://ssite.ru`))
 	if err != nil {
 		panic(err)
@@ -87,7 +87,7 @@ func (cl *ShClient) PostTextPlainRequest() {
 	fmt.Println(string(body))
 }
 
-func (cl ShClient) PostJSONRequest() string {
+func (cl shClient) postJSONRequest() string {
 	request, err := http.NewRequest(http.MethodPost, endpointAPI, strings.NewReader(`{"url": "http://ssgreh.ru"}`))
 	if err != nil {
 		panic(err)
@@ -122,14 +122,14 @@ func (cl ShClient) PostJSONRequest() string {
 	return shortening
 }
 
-func (cl ShClient) GetTextPlainRequest(id uuid.UUID, shortening string) {
+func (cl shClient) getTextPlainRequest(id uuid.UUID, shortening string) {
 	getrequest, err := http.NewRequest(http.MethodGet, endpoint+shortening, nil)
 	if err != nil {
 		panic(err)
 	}
 	getrequest.Header.Add("Content-Type", "text/plain")
 
-	token, err := BuildJWTString(id)
+	token, err := buildJWTString(id)
 	if err != nil {
 		panic(err)
 	}
@@ -150,7 +150,7 @@ func (cl ShClient) GetTextPlainRequest(id uuid.UUID, shortening string) {
 	fmt.Println("Header Location ", origURLResponse.Header.Get("Location"))
 }
 
-func (cl ShClient) PostJSONBatchRequest(id uuid.UUID, param string) {
+func (cl shClient) postJSONBatchRequest(id uuid.UUID, param string) {
 	request, err := http.NewRequest(http.MethodPost, endpointAPIbatch, strings.NewReader(param))
 	if err != nil {
 		panic(err)
@@ -158,7 +158,7 @@ func (cl ShClient) PostJSONBatchRequest(id uuid.UUID, param string) {
 
 	request.Header.Add("Content-Type", "application/json")
 
-	token, err := BuildJWTString(id)
+	token, err := buildJWTString(id)
 	if err != nil {
 		panic(err)
 	}
@@ -193,7 +193,7 @@ func (cl ShClient) PostJSONBatchRequest(id uuid.UUID, param string) {
 	fmt.Println("Response body", rr1)
 }
 
-func (cl ShClient) PostGzipRequest() {
+func (cl shClient) postGzipRequest() {
 	var requestBody bytes.Buffer
 
 	// запрос с компрессией
@@ -234,7 +234,7 @@ func (cl ShClient) PostGzipRequest() {
 	fmt.Println(string(body))
 }
 
-type Claims struct {
+type claims struct {
 	jwt.RegisteredClaims
 	UserID uuid.UUID
 }
@@ -244,9 +244,9 @@ const tokenExp = time.Hour * 3
 // TODO перенести в env
 const secretKey = "secretkey"
 
-func BuildJWTString(id uuid.UUID) (string, error) {
+func buildJWTString(id uuid.UUID) (string, error) {
 	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			// когда создан токен
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
@@ -265,7 +265,7 @@ func BuildJWTString(id uuid.UUID) (string, error) {
 	return tokenString, nil
 }
 
-func (cl *ShClient) PostJWTTextPlainRequest() {
+func (cl *shClient) postJWTTextPlainRequest() {
 	requestText, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(`http://ssite.ru`))
 	if err != nil {
 		panic(err)
@@ -274,7 +274,7 @@ func (cl *ShClient) PostJWTTextPlainRequest() {
 	requestText.Header.Add("Content-Type", "text/plain")
 
 	id := uuid.NewV4()
-	token, err := BuildJWTString(id)
+	token, err := buildJWTString(id)
 	if err != nil {
 		panic(err)
 	}
@@ -306,7 +306,7 @@ func (cl *ShClient) PostJWTTextPlainRequest() {
 	fmt.Println(string(body))
 }
 
-func (cl ShClient) GetJSONBatchRequest(id uuid.UUID) {
+func (cl shClient) getJSONBatchRequest(id uuid.UUID) {
 	request, err := http.NewRequest(http.MethodGet, endpointAPIselectAll, nil)
 	if err != nil {
 		panic(err)
@@ -314,7 +314,7 @@ func (cl ShClient) GetJSONBatchRequest(id uuid.UUID) {
 
 	request.Header.Add("Content-Type", "application/json")
 
-	token, err := BuildJWTString(id)
+	token, err := buildJWTString(id)
 	if err != nil {
 		panic(err)
 	}
@@ -353,7 +353,7 @@ func (cl ShClient) GetJSONBatchRequest(id uuid.UUID) {
 	}
 }
 
-func (cl ShClient) DeleteRequest(ids []string, id uuid.UUID) {
+func (cl shClient) deleteRequest(ids []string, id uuid.UUID) {
 	// var idStr = []string{}
 	// for _,v:=range ids {
 	// 	idStr=append(idStr, strconv.Itoa(v))
@@ -370,7 +370,7 @@ func (cl ShClient) DeleteRequest(ids []string, id uuid.UUID) {
 
 	request.Header.Add("Content-Type", "application/json")
 
-	token, err := BuildJWTString(id)
+	token, err := buildJWTString(id)
 	if err != nil {
 		panic(err)
 	}
@@ -393,24 +393,24 @@ func (cl ShClient) DeleteRequest(ids []string, id uuid.UUID) {
 }
 
 func main() {
-	cl := NewClient()
+	cl := newClient()
 
-	//cl.PostTextPlainRequest()
+	//cl.postTextPlainRequest()
 
-	//shortening:=cl.PostJSONRequest()
-	//cl.GetTextPlainRequest("0yofl1hsoCo3nlK")
+	//shortening:=cl.postJSONRequest()
+	//cl.getTextPlainRequest("0yofl1hsoCo3nlK")
 
 	id1 := uuid.NewV4()
-	cl.PostJSONBatchRequest(id1, `[{"correlation_id":"dfgh345","original_url": "http://some-site.ru"},{"correlation_id":"kjhg1234","original_url": "http://testsite.ru"}]`)
+	cl.postJSONBatchRequest(id1, `[{"correlation_id":"dfgh345","original_url": "http://some-site.ru"},{"correlation_id":"kjhg1234","original_url": "http://testsite.ru"}]`)
 	// id2:=uuid.NewV4()
-	// cl.PostJSONBatchRequest(id2,`[{"correlation_id":"23456tg","original_url": "http://so-site.ru"},{"correlation_id":"sghgrh4","original_url": "http://tmdssujh.ru"}]`)
+	// cl.postJSONBatchRequest(id2,`[{"correlation_id":"23456tg","original_url": "http://so-site.ru"},{"correlation_id":"sghgrh4","original_url": "http://tmdssujh.ru"}]`)
 
-	// cl.PostGzipRequest()
+	// cl.postGzipRequest()
 
-	//cl.PostJWTTextPlainRequest()
+	//cl.postJWTTextPlainRequest()
 
-	//cl.GetJSONBatchRequest(uuid.FromStringOrNil("2240318c-b936-4795-b8e5-82d421142fc4"))
+	//cl.getJSONBatchRequest(uuid.FromStringOrNil("2240318c-b936-4795-b8e5-82d421142fc4"))
 
-	//cl.DeleteRequest([]string{"d70561a2addfe213ca3"}, uuid.FromStringOrNil("56b4fc0f-406b-48f7-9026-aa8b685762d6"))
-	//cl.GetTextPlainRequest(uuid.FromStringOrNil("56b4fc0f-406b-48f7-9026-aa8b685762d6"), "tUfUTzrkrFIyZoI")
+	//cl.deleteRequest([]string{"d70561a2addfe213ca3"}, uuid.FromStringOrNil("56b4fc0f-406b-48f7-9026-aa8b685762d6"))
+	//cl.getTextPlainRequest(uuid.FromStringOrNil("56b4fc0f-406b-48f7-9026-aa8b685762d6"), "tUfUTzrkrFIyZoI")
 }

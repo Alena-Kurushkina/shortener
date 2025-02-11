@@ -7,17 +7,12 @@ import (
 	"go.uber.org/zap"
 )
 
-// Log represents global var for logging
-// By default Log is no-op logger
+// Log represents global var for logging.
+// By default Log is no-op logger.
 var Log *zap.SugaredLogger = zap.NewNop().Sugar()
 
+// Initialize creates logger Log.
 func Initialize() error {
-	// cfg := zap.NewProductionConfig()
-	// cfg.OutputPaths = []string{
-	// 	"/Users/alena/log/shortener.log",
-	// }
-	// zl, err := cfg.Build()
-
 	zl, err := zap.NewProduction()
 	if err != nil {
 		return err
@@ -37,6 +32,13 @@ func logRequest(uri, method string, duration time.Duration) {
 	)
 }
 
+func logResponse(code, size int) {
+	Log.Infoln(
+		"status code", code,
+		"size", size,
+	)
+}
+
 type (
 	responseData struct {
 		code int
@@ -49,25 +51,20 @@ type (
 	}
 )
 
+// Write redefines Write method of http.ResponseWriter.
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.size += size
 	return size, err
 }
 
+// WriteHeader redefines WriteHeader method of http.ResponseWriter.
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
 	r.responseData.code = statusCode
 }
 
-func logResponse(code, size int) {
-	Log.Infoln(
-		"status code", code,
-		"size", size,
-	)
-}
-
-// LogMiddleware realises middleware for logging requests and responses
+// LogMiddleware realises middleware for logging requests and responses.
 func LogMiddleware(h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

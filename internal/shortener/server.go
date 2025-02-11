@@ -4,6 +4,7 @@ package shortener
 
 import (
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/go-chi/chi/v5"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
 )
 
-// A Handler represent interface for shortening handler
+// A Handler represent interface for shortening handler.
 type Handler interface {
 	CreateShortening(res http.ResponseWriter, req *http.Request)
 	GetFullString(res http.ResponseWriter, req *http.Request)
@@ -24,18 +25,22 @@ type Handler interface {
 	DeleteRecordJSON(res http.ResponseWriter, req *http.Request)
 }
 
-// A Server aggregates handler and config
+// A Server aggregates handler and config.
 type Server struct {
 	Handler chi.Router
 	Config  *config.Config
 }
 
-// NewRouter creates new routes and middlewares
+// NewRouter creates new routes and middlewares.
 func newRouter(hi Handler) chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/ping", hi.PingDB)
 	r.Get("/{id}", hi.GetFullString)
+
+	r.Get("/debug/pprof/", pprof.Index)
+	r.Get("/debug/pprof/profile", pprof.Profile)
+	r.Get("/debug/pprof/heap", pprof.Handler("heap").ServeHTTP)
 
 	r.Group(func(r chi.Router) {
 		r.Use(compress.GzipMiddleware, logger.LogMiddleware, authenticator.AuthMiddleware)
@@ -51,7 +56,7 @@ func newRouter(hi Handler) chi.Router {
 	return r
 }
 
-// NewServer initializes new server with config and handler
+// NewServer initializes new server with config and handler.
 func NewServer(hdl Handler, cfg *config.Config) *Server {
 	return &Server{
 		Handler: newRouter(hdl),
@@ -59,7 +64,7 @@ func NewServer(hdl Handler, cfg *config.Config) *Server {
 	}
 }
 
-// Run starts listening to server address and handling requests
+// Run starts listening to server address and handling requests.
 func (s *Server) Run() {
 	logger.Log.Infof("Server is listening on %s", s.Config.ServerAddress)
 	err := http.ListenAndServe(s.Config.ServerAddress, s.Handler)

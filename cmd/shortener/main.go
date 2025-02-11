@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "net/http/pprof"
 
 	_ "github.com/golang/mock/mockgen/model"
 
