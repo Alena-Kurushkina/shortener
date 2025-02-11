@@ -18,15 +18,15 @@ import (
 
 var (
 	buildVersion string
-	buildDate string
-	buildCommit string
+	buildDate    string
+	buildCommit  string
 )
 
 func main() {
 	fmt.Printf("Build version: %s\n", buildVersion)
 	fmt.Printf("Build date: %s\n", buildDate)
-	fmt.Printf("Build commit: %s\n", buildCommit)	
-	
+	fmt.Printf("Build commit: %s\n", buildCommit)
+
 	cfg := config.InitConfig()
 	err := logger.Initialize()
 	if err != nil {
