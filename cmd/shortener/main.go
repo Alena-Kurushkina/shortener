@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	_ "net/http/pprof"
 
 	_ "github.com/golang/mock/mockgen/model"
@@ -15,7 +16,17 @@ import (
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
 )
 
+var (
+	buildVersion string
+	buildDate string
+	buildCommit string
+)
+
 func main() {
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)	
+	
 	cfg := config.InitConfig()
 	err := logger.Initialize()
 	if err != nil {
