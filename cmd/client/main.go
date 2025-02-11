@@ -159,6 +159,7 @@ func (cl ShortenerClient) postJSONBatchRequest(id uuid.UUID, param string) {
 	}
 
 	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("Accept-Encoding", "identity")
 
 	token, err := buildJWTString(id)
 	if err != nil {
@@ -403,7 +404,7 @@ func main() {
 	//cl.getTextPlainRequest("0yofl1hsoCo3nlK")
 
 	id1 := uuid.NewV4()
-	cl.postJSONBatchRequest(id1, `[{"correlation_id":"dfgh345","original_url": "http://some-site.ru"},{"correlation_id":"kjhg1234","original_url": "http://testsite.ru"}]`)
+	cl.postJSONBatchRequest(id1, `[{"correlation_id":"8f4f4159-85d2-4aa6-bce8-4d9eb249c01b","original_url":"http://uk8d4ovutebb2.ru"},{"correlation_id":"450cffae-147a-4653-8b91-4b3c2e06df30","original_url":"http://yq1xxhwihp4l1.net/jelbsck49bdkp"}]`)
 	// id2:=uuid.NewV4()
 	// cl.postJSONBatchRequest(id2,`[{"correlation_id":"23456tg","original_url": "http://so-site.ru"},{"correlation_id":"sghgrh4","original_url": "http://tmdssujh.ru"}]`)
 

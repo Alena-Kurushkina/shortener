@@ -22,7 +22,7 @@ import (
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
 )
 
-const timeoutInSec time.Duration = 30
+const timeoutPing time.Duration = 30
 
 // Storager defines operations with data storage.
 type Storager interface {
@@ -412,7 +412,7 @@ func (sh *Shortener) DeleteRecordJSON(res http.ResponseWriter, req *http.Request
 // PingDB check connection to data storage.
 func (sh *Shortener) PingDB(res http.ResponseWriter, req *http.Request) {
 
-	ctx, cancel := context.WithTimeout(req.Context(), timeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(req.Context(), timeoutPing*time.Second)
 	defer cancel()
 	if err := sh.repo.Ping(ctx); err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
