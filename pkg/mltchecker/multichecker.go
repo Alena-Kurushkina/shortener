@@ -14,6 +14,7 @@ import (
 	"github.com/Alena-Kurushkina/shortener/pkg/exitanalyzer"
 )
 
+// NewMultichecker creates custom multichecker
 func NewMultichecker() []*analysis.Analyzer {
 	mychecks := []*analysis.Analyzer{
 		exitanalyzer.ExitCheckAnalyzer,

@@ -4,11 +4,11 @@ import (
 	"os"
 )
 
-func Exit() {
+func exit() {
 	os.Exit(3)
 }
 
 func main() {
-	Exit()
+	exit()
 	os.Exit(3) // want "call os.Exit"
 }

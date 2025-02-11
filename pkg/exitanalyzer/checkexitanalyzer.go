@@ -7,6 +7,7 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
+// ExitCheckAnalyzer represents analyzer for check os.Exit in main method
 var ExitCheckAnalyzer = &analysis.Analyzer{
 	Name: "osexitcheck",
 	Doc: `

@@ -8,6 +8,7 @@ import (
 	"unicode"
 )
 
+// GenerateDoc generates documentation for multichecker
 func GenerateDoc() {
 	doc := strings.Builder{}
 	doc.WriteString(`
