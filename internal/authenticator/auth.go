@@ -1,3 +1,4 @@
+// Package authenticator realises middleware for user authentication.
 package authenticator
 
 import (
@@ -95,7 +96,7 @@ func AuthMiddleware(h http.Handler) http.Handler {
 				}
 				userID := uuid.NewV4()
 
-				err := setNewTokenInCookie(w, userID)
+				err = setNewTokenInCookie(w, userID)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 				}

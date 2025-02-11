@@ -1,3 +1,5 @@
+// Shortener is a service that accepts and stores long urls and serves requests for corresponding shortenings
+
 package main
 
 import (

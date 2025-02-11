@@ -53,6 +53,7 @@ type (
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, reqMethod, path string, contentType string, body string) responseParams {
+	t.Helper()
 	request, err := http.NewRequest(reqMethod, ts.URL+path, strings.NewReader(body))
 	request.Header.Add("Content-Type", contentType)
 	require.NoError(t, err)
@@ -60,7 +61,10 @@ func testRequest(t *testing.T, ts *httptest.Server, reqMethod, path string, cont
 	resp, err := ts.Client().Do(request)
 	require.NoError(t, err)
 
-	defer resp.Body.Close()
+	defer func() {
+		tempErr:=resp.Body.Close()
+		require.NoError(t, tempErr)
+	}()
 
 	rp := responseParams{}
 
@@ -327,7 +331,7 @@ func TestRouterJSONBatch(t *testing.T) {
 		batchElems  []batchElem
 	}
 
-	t.Run("positive short and expand test", func(t *testing.T) {
+	t.Run("positive shorten and expand test", func(t *testing.T) {
 		testDataShort := testData{
 			method:      http.MethodPost,
 			name:        "",

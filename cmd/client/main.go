@@ -1,5 +1,7 @@
 package main
 
+//lint:file-ignore U1000 игнорируем неиспользуемый код, так как он нужен только при разработке 
+
 import (
 	"bytes"
 	"compress/gzip"
@@ -30,11 +32,11 @@ type batchElement struct {
 	OriginalURL   string `json:"original_url"`
 	ShortURL      string `json:"short_url,omitempty"`
 }
-type shClient struct {
+type ShortenerClient struct {
 	client *http.Client
 }
 
-func newClient() shClient {
+func newClient() ShortenerClient {
 	// добавляем HTTP-клиент
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -57,10 +59,10 @@ func newClient() shClient {
 	if resp.StatusCode != http.StatusOK {
 		panic("Ping failed")
 	}
-	return shClient{client: client}
+	return ShortenerClient{client: client}
 }
 
-func (cl *shClient) postTextPlainRequest() {
+func (cl *ShortenerClient) postTextPlainRequest() {
 	requestText, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(`http://ssite.ru`))
 	if err != nil {
 		panic(err)
@@ -87,7 +89,7 @@ func (cl *shClient) postTextPlainRequest() {
 	fmt.Println(string(body))
 }
 
-func (cl shClient) postJSONRequest() string {
+func (cl ShortenerClient) postJSONRequest() string {
 	request, err := http.NewRequest(http.MethodPost, endpointAPI, strings.NewReader(`{"url": "http://ssgreh.ru"}`))
 	if err != nil {
 		panic(err)
@@ -122,7 +124,7 @@ func (cl shClient) postJSONRequest() string {
 	return shortening
 }
 
-func (cl shClient) getTextPlainRequest(id uuid.UUID, shortening string) {
+func (cl ShortenerClient) getTextPlainRequest(id uuid.UUID, shortening string) {
 	getrequest, err := http.NewRequest(http.MethodGet, endpoint+shortening, nil)
 	if err != nil {
 		panic(err)
@@ -150,7 +152,7 @@ func (cl shClient) getTextPlainRequest(id uuid.UUID, shortening string) {
 	fmt.Println("Header Location ", origURLResponse.Header.Get("Location"))
 }
 
-func (cl shClient) postJSONBatchRequest(id uuid.UUID, param string) {
+func (cl ShortenerClient) postJSONBatchRequest(id uuid.UUID, param string) {
 	request, err := http.NewRequest(http.MethodPost, endpointAPIbatch, strings.NewReader(param))
 	if err != nil {
 		panic(err)
@@ -193,7 +195,7 @@ func (cl shClient) postJSONBatchRequest(id uuid.UUID, param string) {
 	fmt.Println("Response body", rr1)
 }
 
-func (cl shClient) postGzipRequest() {
+func (cl ShortenerClient) postGzipRequest() {
 	var requestBody bytes.Buffer
 
 	// запрос с компрессией
@@ -265,7 +267,7 @@ func buildJWTString(id uuid.UUID) (string, error) {
 	return tokenString, nil
 }
 
-func (cl *shClient) postJWTTextPlainRequest() {
+func (cl *ShortenerClient) postJWTTextPlainRequest() {
 	requestText, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(`http://ssite.ru`))
 	if err != nil {
 		panic(err)
@@ -306,7 +308,7 @@ func (cl *shClient) postJWTTextPlainRequest() {
 	fmt.Println(string(body))
 }
 
-func (cl shClient) getJSONBatchRequest(id uuid.UUID) {
+func (cl ShortenerClient) getJSONBatchRequest(id uuid.UUID) {
 	request, err := http.NewRequest(http.MethodGet, endpointAPIselectAll, nil)
 	if err != nil {
 		panic(err)
@@ -353,7 +355,7 @@ func (cl shClient) getJSONBatchRequest(id uuid.UUID) {
 	}
 }
 
-func (cl shClient) deleteRequest(ids []string, id uuid.UUID) {
+func (cl ShortenerClient) deleteRequest(ids []string, id uuid.UUID) {
 	// var idStr = []string{}
 	// for _,v:=range ids {
 	// 	idStr=append(idStr, strconv.Itoa(v))

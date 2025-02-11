@@ -32,7 +32,6 @@ type claims struct {
 func buildJWTString(id uuid.UUID) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 3)),
 		},
 		UserID: id,
@@ -134,6 +133,9 @@ func Example() {
 
 	//read response
 	fmt.Println("Status", origURLResponse.Status)
-	defer origURLResponse.Body.Close()
+	defer func(){
+		tErr:=origURLResponse.Body.Close()
+		fmt.Println("Error while body closing", tErr.Error())
+	}()
 	fmt.Println("Long URL", origURLResponse.Header.Get("Location"))
 }
