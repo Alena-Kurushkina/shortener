@@ -8,6 +8,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/Alena-Kurushkina/shortener/internal/config"
+	"github.com/Alena-Kurushkina/shortener/internal/generator"
 )
 
 func waitEmpty(sh *Shortener) {
@@ -51,21 +52,16 @@ func BenchmarkFlushDeleteItems(b *testing.B) {
 			go waitEmpty(sh)
 			b.StartTimer()
 
-			sh.flushDeleteItemsV2()
+			sh.flushDeleteItems()
 		}
 	})
 
 }
 
 func BenchmarkGenerateRandomString(b *testing.B) {
-	b.Run("generate random string", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			generateRandomString(15)
-		}
-	})
 	b.Run("generate random string faster", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			generateRandomStringFaster(15)
+			generator.GenerateRandomString(15)
 		}
 	})
 }
