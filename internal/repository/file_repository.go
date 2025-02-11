@@ -25,9 +25,9 @@ func newFileRepository(filename string) (db api.Storager, err error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func (){
-		if tErr:=file.Close(); tErr!=nil{
-			err=tErr
+	defer func() {
+		if tErr := file.Close(); tErr != nil {
+			err = tErr
 		}
 	}()
 
@@ -76,9 +76,9 @@ func (r FileRepository) InsertBatch(_ context.Context, userID uuid.UUID, batch [
 	if err != nil {
 		return err
 	}
-	defer func (){
-		if tErr:=file.Close(); tErr!=nil{
-			err=tErr
+	defer func() {
+		if tErr := file.Close(); tErr != nil {
+			err = tErr
 		}
 	}()
 
@@ -119,9 +119,9 @@ func (r FileRepository) Insert(_ context.Context, userID uuid.UUID, key, value s
 	if err != nil {
 		return err
 	}
-	defer func (){
-		if tErr:=file.Close(); tErr!=nil{
-			err=tErr
+	defer func() {
+		if tErr := file.Close(); tErr != nil {
+			err = tErr
 		}
 	}()
 

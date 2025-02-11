@@ -123,7 +123,7 @@ func (r DBRepository) Insert(ctx context.Context, userID uuid.UUID, insertedShor
 		return sherr.NewAlreadyExistError(insertedOriginalURL, dbShortURL)
 	}
 
-	err=tx.Commit()
+	err = tx.Commit()
 
 	return err
 }
@@ -192,7 +192,7 @@ func (r DBRepository) InsertBatch(ctx context.Context, userID uuid.UUID, batch [
 		}
 	}
 
-	err=tx.Commit()
+	err = tx.Commit()
 
 	return err
 }
@@ -238,9 +238,9 @@ func (r DBRepository) SelectUserAll(ctx context.Context, id uuid.UUID) (records 
 	if err != nil {
 		return nil, err
 	}
-	defer func (){
-		if tErr:=rows.Close(); tErr!=nil{
-			err=tErr
+	defer func() {
+		if tErr := rows.Close(); tErr != nil {
+			err = tErr
 		}
 	}()
 

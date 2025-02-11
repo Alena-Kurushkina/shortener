@@ -6,10 +6,10 @@ import (
 	"github.com/Alena-Kurushkina/shortener/pkg/mltchecker"
 )
 
-func main(){
+func main() {
 	mychecks := mltchecker.NewMultichecker()
 
-    multichecker.Main(
-        mychecks...,
-    )
+	multichecker.Main(
+		mychecks...,
+	)
 }

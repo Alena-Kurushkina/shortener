@@ -62,7 +62,7 @@ func testRequest(t *testing.T, ts *httptest.Server, reqMethod, path string, cont
 	require.NoError(t, err)
 
 	defer func() {
-		tempErr:=resp.Body.Close()
+		tempErr := resp.Body.Close()
 		require.NoError(t, tempErr)
 	}()
 

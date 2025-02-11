@@ -98,8 +98,8 @@ func GzipMiddleware(h http.Handler) http.Handler {
 		if supportsGzip && isValid {
 			cw := NewCompressWriter(w)
 			ow = cw
-			defer func(){
-				tErr:=cw.Close()
+			defer func() {
+				tErr := cw.Close()
 				if tErr != nil {
 					http.Error(w, tErr.Error(), http.StatusInternalServerError)
 					return
@@ -115,8 +115,8 @@ func GzipMiddleware(h http.Handler) http.Handler {
 				return
 			}
 			r.Body = cr
-			defer func(){
-				tErr:=cr.Close()
+			defer func() {
+				tErr := cr.Close()
 				if tErr != nil {
 					http.Error(w, tErr.Error(), http.StatusInternalServerError)
 					return

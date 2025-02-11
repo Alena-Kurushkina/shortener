@@ -133,8 +133,8 @@ func Example() {
 
 	//read response
 	fmt.Println("Status", origURLResponse.Status)
-	defer func(){
-		tErr:=origURLResponse.Body.Close()
+	defer func() {
+		tErr := origURLResponse.Body.Close()
 		fmt.Println("Error while body closing", tErr.Error())
 	}()
 	fmt.Println("Long URL", origURLResponse.Header.Get("Location"))

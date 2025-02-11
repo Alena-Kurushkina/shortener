@@ -1,4 +1,4 @@
-// Package generator realises function for generating random string of certain length 
+// Package generator realises function for generating random string of certain length
 package generator
 
 import (
