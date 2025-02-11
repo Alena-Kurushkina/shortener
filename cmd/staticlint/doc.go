@@ -6,34 +6,34 @@
 // • exportloopref.Analyzer and thelper.Analyzer.
 //
 // Usage:
-//   cmd/staticlint/main.go [path to folder for check]
+//
+//	cmd/staticlint/main.go [path to folder for check]
 //
 // Example:
-//   ./cmd/staticlint/main.go ./...
+//
+//	./cmd/staticlint/main.go ./...
 //
 // Description of analyzers:
 //
-// OSEXITCHECK
-//
+// # OSEXITCHECK
 //
 // check for os.Exit call in main function of main package
 //
 // It returns warning if it finds os.Exit() call in main function of main package.
 //
 // For example:
-//   package main
 //
-//   import (
-// 	"os"
-//   )
+//	  package main
 //
-//   func main(){
-//     os.Exit(3)
-//   }
+//	  import (
+//		"os"
+//	  )
 //
+//	  func main(){
+//	    os.Exit(3)
+//	  }
 //
-//
-// PRINTF
+// # PRINTF
 //
 // check consistency of Printf format strings and arguments
 //
@@ -46,7 +46,7 @@
 // See the documentation of the fmt package for the complete set of
 // format operators and their operand types.
 //
-// SHADOW
+// # SHADOW
 //
 // check for possible unintended shadowing of variables
 //
@@ -61,49 +61,49 @@
 //
 // For example:
 //
-// 	func BadRead(f *os.File, buf []byte) error {
-// 		var err error
-// 		for {
-// 			n, err := f.Read(buf) // shadows the function variable 'err'
-// 			if err != nil {
-// 				break // causes return of wrong value
-// 			}
-// 			foo(buf)
-// 		}
-// 		return err
-// 	}
+//	func BadRead(f *os.File, buf []byte) error {
+//		var err error
+//		for {
+//			n, err := f.Read(buf) // shadows the function variable 'err'
+//			if err != nil {
+//				break // causes return of wrong value
+//			}
+//			foo(buf)
+//		}
+//		return err
+//	}
 //
-// STRUCTTAG
+// # STRUCTTAG
 //
 // check that struct field tags conform to reflect.StructTag.Get
 //
 // Also report certain struct tags (json, xml) used with unexported fields.
 //
-// SA1000
+// # SA1000
 //
 // invalid regular expression
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1001
+// # SA1001
 //
 // invalid template
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1002
+// # SA1002
 //
 // invalid format in time.Parse
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1003
+// # SA1003
 //
 // unsupported argument to functions in encoding/binary
 //
@@ -115,10 +115,10 @@
 // Before Go 1.8, bool wasn't supported, either.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1004
+// # SA1004
 //
 // suspiciously small untyped constant in time.Sleep
 //
@@ -136,10 +136,10 @@
 // for some amount of nanoseconds.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1005
+// # SA1005
 //
 // invalid first argument to exec.Command
 //
@@ -150,23 +150,23 @@
 // responsible for splitting the user's input into a program name and its
 // arguments. For example, the equivalent to
 //
-//     ls / /tmp
+//	ls / /tmp
 //
 // would be
 //
-//     exec.Command("ls", "/", "/tmp")
+//	exec.Command("ls", "/", "/tmp")
 //
 // If you want to run a command in a shell, consider using something like
 // the following – but be aware that not all systems, particularly
 // Windows, will have a /bin/sh program:
 //
-//     exec.Command("/bin/sh", "-c", "ls | grep Awesome")
+//	exec.Command("/bin/sh", "-c", "ls | grep Awesome")
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1006
+// # SA1006
 //
 // printf with dynamic first argument and no further arguments
 //
@@ -175,15 +175,15 @@
 // combinations have special meaning. If, for example, a user were to
 // enter a string such as
 //
-//     Interest rate: 5%
+//	Interest rate: 5%
 //
 // and you printed it with
 //
-//     fmt.Printf(s)
+//	fmt.Printf(s)
 //
 // it would lead to the following output:
 //
-//     Interest rate: 5%!(NOVERB).
+//	Interest rate: 5%!(NOVERB).
 //
 // Similarly, forming the first parameter via string concatenation with
 // user input should be avoided for the same reason. When printing user
@@ -191,18 +191,18 @@
 // and pass the string as an argument.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1007
+// # SA1007
 //
 // invalid URL in net/url.Parse
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1008
+// # SA1008
 //
 // non-canonical key in http.Header map
 //
@@ -216,22 +216,22 @@
 // order to avoid inconsistencies. The following piece of code
 // demonstrates one such inconsistency:
 //
-//     h := http.Header{}
-//     h["etag"] = []string{"1234"}
-//     h.Add("etag", "5678")
-//     fmt.Println(h)
+//	h := http.Header{}
+//	h["etag"] = []string{"1234"}
+//	h.Add("etag", "5678")
+//	fmt.Println(h)
 //
-//     // Output:
-//     // map[Etag:[5678] etag:[1234]]
+//	// Output:
+//	// map[Etag:[5678] etag:[1234]]
 //
 // The easiest way of obtaining the canonical form of a key is to use
 // http.CanonicalHeaderKey.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1010
+// # SA1010
 //
 // (*regexp.Regexp).FindAll called with n == 0, which will always return zero results
 //
@@ -239,42 +239,42 @@
 // return all results, specify a negative number.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1011
+// # SA1011
 //
 // various methods in the 'strings' package expect valid UTF-8, but invalid input is provided
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1012
+// # SA1012
 //
 // a nil context.Context is being passed to a function, consider using context.TODO instead
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1013
+// # SA1013
 //
 // io.Seeker.Seek is being called with the whence constant as the first argument, but it should be the second
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1014
+// # SA1014
 //
 // non-pointer value passed to Unmarshal or Decode
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1015
+// # SA1015
 //
 // using time.Tick in a way that will leak. Consider using time.NewTicker, and only use time.Tick in tests, commands and endless functions
 //
@@ -285,10 +285,10 @@
 // Go 1.23 fixes this by allowing tickers to be collected even if they weren't closed.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1016
+// # SA1016
 //
 // trapping a signal that cannot be trapped
 //
@@ -298,10 +298,10 @@
 // kernel. It is therefore pointless to try and handle these signals.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1017
+// # SA1017
 //
 // channels used with os/signal.Notify should be buffered
 //
@@ -313,10 +313,10 @@
 // signal value, a buffer of size 1 is sufficient.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1018
+// # SA1018
 //
 // strings.Replace called with n == 0, which does nothing
 //
@@ -324,26 +324,26 @@
 // instances, use a negative number, or use strings.ReplaceAll.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1019
+// # SA1019
 //
 // using a deprecated function, variable, constant or field
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1020
+// # SA1020
 //
 // using an invalid host:port pair with a net.Listen-related function
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1021
+// # SA1021
 //
 // using bytes.Equal to compare two net.IP
 //
@@ -354,20 +354,20 @@
 // be used, as it takes both representations into account.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1023
+// # SA1023
 //
 // modifying the buffer in an io.Writer implementation
 //
 // Write must not modify the slice data, even temporarily.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1024
+// # SA1024
 //
 // a string cutset contains duplicate characters
 //
@@ -375,7 +375,7 @@
 // prefixes. A cutset is treated as a set of characters to remove from a
 // string. For example,
 //
-//     strings.TrimLeft("42133word", "1234")
+//	strings.TrimLeft("42133word", "1234")
 //
 // will result in the string "word" – any characters that are 1, 2, 3 or
 // 4 are cut from the left of the string.
@@ -383,26 +383,26 @@
 // In order to remove one string from another, use strings.TrimPrefix instead.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA1025
+// # SA1025
 //
 // it is not possible to use (*time.Timer).Reset's return value correctly
 //
 // Available since
-//     2019.1
 //
+//	2019.1
 //
-// SA1026
+// # SA1026
 //
 // cannot marshal channels or functions
 //
 // Available since
-//     2019.2
 //
+//	2019.2
 //
-// SA1027
+// # SA1027
 //
 // atomic access to 64-bit variable must be 64-bit aligned
 //
@@ -415,20 +415,20 @@
 // in a struct.
 //
 // Available since
-//     2019.2
 //
+//	2019.2
 //
-// SA1028
+// # SA1028
 //
 // sort.Slice can only be used on slices
 //
 // The first argument of sort.Slice must be a slice.
 //
 // Available since
-//     2020.1
 //
+//	2020.1
 //
-// SA1029
+// # SA1029
 //
 // inappropriate key in call to context.WithValue
 //
@@ -443,10 +443,10 @@
 // interface.
 //
 // Available since
-//     2020.1
 //
+//	2020.1
 //
-// SA1030
+// # SA1030
 //
 // invalid argument in call to a strconv function
 //
@@ -454,10 +454,10 @@
 // the various parsing and formatting functions in strconv.
 //
 // Available since
-//     2021.1
 //
+//	2021.1
 //
-// SA1031
+// # SA1031
 //
 // overlapping byte slices passed to an encoder
 //
@@ -467,10 +467,10 @@
 // writes more than one byte per src byte.
 //
 // Available since
-//     2024.1
 //
+//	2024.1
 //
-// SA1032
+// # SA1032
 //
 // wrong order of arguments to errors.Is
 //
@@ -478,39 +478,39 @@
 // that we have and the second argument is the error we're trying to match against.
 // For example:
 //
-// 	if errors.Is(err, io.EOF) { ... }
+//	if errors.Is(err, io.EOF) { ... }
 //
 // This check detects some cases where the two arguments have been swapped. It
 // flags any calls where the first argument is referring to a package-level error
 // variable, such as
 //
-// 	if errors.Is(io.EOF, err) { /* this is wrong */ }
+//	if errors.Is(io.EOF, err) { /* this is wrong */ }
 //
 // Available since
-//     2024.1
 //
+//	2024.1
 //
-// SA2000
+// # SA2000
 //
 // sync.WaitGroup.Add called inside the goroutine, leading to a race condition
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA2001
+// # SA2001
 //
 // empty critical section, did you mean to defer the unlock?
 //
 // Empty critical sections of the kind
 //
-//     mu.Lock()
-//     mu.Unlock()
+//	mu.Lock()
+//	mu.Unlock()
 //
 // are very often a typo, and the following was intended instead:
 //
-//     mu.Lock()
-//     defer mu.Unlock()
+//	mu.Lock()
+//	defer mu.Unlock()
 //
 // Do note that sometimes empty critical sections can be useful, as a
 // form of signaling to wait on another goroutine. Many times, there are
@@ -520,26 +520,26 @@
 // rare false positive.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA2002
+// # SA2002
 //
 // called testing.T.FailNow or SkipNow in a goroutine, which isn't allowed
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA2003
+// # SA2003
 //
 // deferred Lock right after locking, likely meant to defer Unlock instead
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA3000
+// # SA3000
 //
 // testMain doesn't call os.Exit, hiding test failures
 //
@@ -551,10 +551,10 @@
 // os.Exit(m.Run()).
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA3001
+// # SA3001
 //
 // assigning to b.N in benchmarks distorts the results
 //
@@ -564,266 +564,265 @@
 // falsify results.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4000
+// # SA4000
 //
 // binary operator has identical expressions on both sides
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4001
+// # SA4001
 //
 // &*x gets simplified to x, it does not copy x
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4003
+// # SA4003
 //
 // comparing unsigned values against negative values is pointless
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4004
+// # SA4004
 //
 // the loop exits unconditionally after one iteration
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4005
+// # SA4005
 //
 // field assignment that will never be observed. Did you mean to use a pointer receiver?
 //
 // Available since
-//     2021.1
 //
+//	2021.1
 //
-// SA4006
+// # SA4006
 //
 // a value assigned to a variable is never read before being overwritten. Forgotten error check or dead code?
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4008
+// # SA4008
 //
 // the variable in the loop condition never changes, are you incrementing the wrong variable?
 //
 // For example:
 //
-// 	for i := 0; i < 10; j++ { ... }
+//	for i := 0; i < 10; j++ { ... }
 //
 // This may also occur when a loop can only execute once because of unconditional
 // control flow that terminates the loop. For example, when a loop body contains an
 // unconditional break, return, or panic:
 //
-// 	func f() {
-// 		panic("oops")
-// 	}
-// 	func g() {
-// 		for i := 0; i < 10; i++ {
-// 			// f unconditionally calls panic, which means "i" is
-// 			// never incremented.
-// 			f()
-// 		}
-// 	}
+//	func f() {
+//		panic("oops")
+//	}
+//	func g() {
+//		for i := 0; i < 10; i++ {
+//			// f unconditionally calls panic, which means "i" is
+//			// never incremented.
+//			f()
+//		}
+//	}
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4009
+// # SA4009
 //
 // a function argument is overwritten before its first use
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4010
+// # SA4010
 //
 // the result of append will never be observed anywhere
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4011
+// # SA4011
 //
 // break statement with no effect. Did you mean to break out of an outer loop?
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4012
+// # SA4012
 //
 // comparing a value against NaN even though no value is equal to NaN
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4013
+// # SA4013
 //
 // negating a boolean twice (!!b) is the same as writing b. This is either redundant, or a typo.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4014
+// # SA4014
 //
 // an if/else if chain has repeated conditions and no side-effects; if the condition didn't match the first time, it won't match the second time, either
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4015
+// # SA4015
 //
 // calling functions like math.Ceil on floats converted from integers doesn't do anything useful
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4016
+// # SA4016
 //
 // certain bitwise operations, such as x ^ 0, do not do anything useful
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4017
+// # SA4017
 //
 // discarding the return values of a function without side effects, making the call pointless
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4018
+// # SA4018
 //
 // self-assignment of variables
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4019
+// # SA4019
 //
 // multiple, identical build constraints in the same file
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA4020
+// # SA4020
 //
 // unreachable case clause in a type switch
 //
 // In a type switch like the following
 //
-//     type T struct{}
-//     func (T) Read(b []byte) (int, error) { return 0, nil }
+//	type T struct{}
+//	func (T) Read(b []byte) (int, error) { return 0, nil }
 //
-//     var v interface{} = T{}
+//	var v interface{} = T{}
 //
-//     switch v.(type) {
-//     case io.Reader:
-//         // ...
-//     case T:
-//         // unreachable
-//     }
+//	switch v.(type) {
+//	case io.Reader:
+//	    // ...
+//	case T:
+//	    // unreachable
+//	}
 //
 // the second case clause can never be reached because T implements
 // io.Reader and case clauses are evaluated in source order.
 //
 // Another example:
 //
-//     type T struct{}
-//     func (T) Read(b []byte) (int, error) { return 0, nil }
-//     func (T) Close() error { return nil }
+//	type T struct{}
+//	func (T) Read(b []byte) (int, error) { return 0, nil }
+//	func (T) Close() error { return nil }
 //
-//     var v interface{} = T{}
+//	var v interface{} = T{}
 //
-//     switch v.(type) {
-//     case io.Reader:
-//         // ...
-//     case io.ReadCloser:
-//         // unreachable
-//     }
+//	switch v.(type) {
+//	case io.Reader:
+//	    // ...
+//	case io.ReadCloser:
+//	    // unreachable
+//	}
 //
 // Even though T has a Close method and thus implements io.ReadCloser,
 // io.Reader will always match first. The method set of io.Reader is a
 // subset of io.ReadCloser. Thus it is impossible to match the second
 // case without matching the first case.
 //
-//
-// Structurally equivalent interfaces
+// # Structurally equivalent interfaces
 //
 // A special case of the previous example are structurally identical
 // interfaces. Given these declarations
 //
-//     type T error
-//     type V error
+//	type T error
+//	type V error
 //
-//     func doSomething() error {
-//         err, ok := doAnotherThing()
-//         if ok {
-//             return T(err)
-//         }
+//	func doSomething() error {
+//	    err, ok := doAnotherThing()
+//	    if ok {
+//	        return T(err)
+//	    }
 //
-//         return U(err)
-//     }
+//	    return U(err)
+//	}
 //
 // the following type switch will have an unreachable case clause:
 //
-//     switch doSomething().(type) {
-//     case T:
-//         // ...
-//     case V:
-//         // unreachable
-//     }
+//	switch doSomething().(type) {
+//	case T:
+//	    // ...
+//	case V:
+//	    // unreachable
+//	}
 //
 // T will always match before V because they are structurally equivalent
 // and therefore doSomething()'s return value implements both.
 //
 // Available since
-//     2019.2
 //
+//	2019.2
 //
-// SA4021
+// # SA4021
 //
 // 'x = append(y)' is equivalent to 'x = y'
 //
 // Available since
-//     2019.2
 //
+//	2019.2
 //
-// SA4022
+// # SA4022
 //
 // comparing the address of a variable against nil
 //
 // Code such as 'if &x == nil' is meaningless, because taking the address of a variable always yields a non-nil pointer.
 //
 // Available since
-//     2020.1
 //
+//	2020.1
 //
-// SA4023
+// # SA4023
 //
 // impossible comparison of interface value with untyped nil
 //
@@ -847,13 +846,13 @@
 // This situation can be confusing, and arises when a nil value is
 // stored inside an interface value such as an error return:
 //
-//     func returnsError() error {
-//         var p *MyError = nil
-//         if bad() {
-//             p = ErrBad
-//         }
-//         return p // Will always return a non-nil error.
-//     }
+//	func returnsError() error {
+//	    var p *MyError = nil
+//	    if bad() {
+//	        p = ErrBad
+//	    }
+//	    return p // Will always return a non-nil error.
+//	}
 //
 // If all goes well, the function returns a nil p, so the return
 // value is an error interface value holding (T=*MyError, V=nil).
@@ -862,12 +861,12 @@
 // happened. To return a proper nil error to the caller, the
 // function must return an explicit nil:
 //
-//     func returnsError() error {
-//         if bad() {
-//             return ErrBad
-//         }
-//         return nil
-//     }
+//	func returnsError() error {
+//	    if bad() {
+//	        return ErrBad
+//	    }
+//	    return nil
+//	}
 //
 // It's a good idea for functions that return errors always to use
 // the error type in their signature (as we did above) rather than a
@@ -886,10 +885,10 @@
 // Commons Attribution 3.0 License.
 //
 // Available since
-//     2020.2
 //
+//	2020.2
 //
-// SA4024
+// # SA4024
 //
 // checking for impossible return value from a builtin function
 //
@@ -899,15 +898,15 @@
 //
 // Example:
 //
-//     if len(slice) < 0 {
-//         fmt.Println("unreachable code")
-//     }
+//	if len(slice) < 0 {
+//	    fmt.Println("unreachable code")
+//	}
 //
 // Available since
-//     2021.1
 //
+//	2021.1
 //
-// SA4025
+// # SA4025
 //
 // integer division of literals that results in zero
 //
@@ -915,10 +914,10 @@
 // also be an integer. Thus, a division such as 2 / 3 results in 0.
 // This is true for all of the following examples:
 //
-// 	_ = 2 / 3
-// 	const _ = 2 / 3
-// 	const _ float64 = 2 / 3
-// 	_ = float64(2 / 3)
+//	_ = 2 / 3
+//	const _ = 2 / 3
+//	const _ float64 = 2 / 3
+//	_ = float64(2 / 3)
 //
 // Staticcheck will flag such divisions if both sides of the division are
 // integer literals, as it is highly unlikely that the division was
@@ -926,10 +925,10 @@
 // division involving named constants, to avoid noisy positives.
 //
 // Available since
-//     2021.1
 //
+//	2021.1
 //
-// SA4026
+// # SA4026
 //
 // go constants cannot express negative zero
 //
@@ -944,10 +943,10 @@
 // math.Copysign function: math.Copysign(0, -1).
 //
 // Available since
-//     2021.1
 //
+//	2021.1
 //
-// SA4027
+// # SA4027
 //
 // (*net/url.URL).Query returns a copy, modifying it doesn't change the URL
 //
@@ -960,18 +959,18 @@
 // u.Query().Add(key, value).
 //
 // Available since
-//     2021.1
 //
+//	2021.1
 //
-// SA4028
+// # SA4028
 //
 // x % 1 is always zero
 //
 // Available since
-//     2022.1
 //
+//	2022.1
 //
-// SA4029
+// # SA4029
 //
 // ineffective attempt at sorting slice
 //
@@ -983,10 +982,10 @@
 // sort.Ints, and sort.Strings.
 //
 // Available since
-//     2022.1
 //
+//	2022.1
 //
-// SA4030
+// # SA4030
 //
 // ineffective attempt at generating random number
 //
@@ -997,50 +996,50 @@
 // or 1, it always generates 0.
 //
 // Available since
-//     2022.1
 //
+//	2022.1
 //
-// SA4031
+// # SA4031
 //
 // checking never-nil value against nil
 //
 // Available since
-//     2022.1
 //
+//	2022.1
 //
-// SA4032
+// # SA4032
 //
 // comparing runtime.GOOS or runtime.GOARCH against impossible value
 //
 // Available since
-//     2024.1
 //
+//	2024.1
 //
-// SA5000
+// # SA5000
 //
 // assignment to nil map
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA5001
+// # SA5001
 //
 // deferring Close before checking for a possible error
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA5002
+// # SA5002
 //
 // the empty for loop ('for {}') spins and can block the scheduler
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA5003
+// # SA5003
 //
 // defers in infinite loops will never execute
 //
@@ -1049,18 +1048,18 @@
 // infinite loop, defers will never execute.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA5004
+// # SA5004
 //
 // 'for { select { ...' with an empty default branch spins
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA5005
+// # SA5005
 //
 // the finalizer references the finalized object, preventing garbage collection
 //
@@ -1077,10 +1076,10 @@
 // to zero before the object is being passed to the finalizer.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA5007
+// # SA5007
 //
 // infinite recursive call
 //
@@ -1095,26 +1094,26 @@
 // should be used instead.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA5008
+// # SA5008
 //
 // invalid struct tag
 //
 // Available since
-//     2019.2
 //
+//	2019.2
 //
-// SA5009
+// # SA5009
 //
 // invalid Printf call
 //
 // Available since
-//     2019.2
 //
+//	2019.2
 //
-// SA5010
+// # SA5010
 //
 // impossible type assertion
 //
@@ -1135,10 +1134,10 @@
 // either.
 //
 // Available since
-//     2020.1
 //
+//	2020.1
 //
-// SA5011
+// # SA5011
 //
 // possible nil pointer dereference
 //
@@ -1148,24 +1147,24 @@
 // commonly a result of improperly ordered code or missing return
 // statements. Consider the following examples:
 //
-//     func fn(x *int) {
-//         fmt.Println(*x)
+//	func fn(x *int) {
+//	    fmt.Println(*x)
 //
-//         // This nil check is equally important for the previous dereference
-//         if x != nil {
-//             foo(*x)
-//         }
-//     }
+//	    // This nil check is equally important for the previous dereference
+//	    if x != nil {
+//	        foo(*x)
+//	    }
+//	}
 //
-//     func TestFoo(t *testing.T) {
-//         x := compute()
-//         if x == nil {
-//             t.Errorf("nil pointer received")
-//         }
+//	func TestFoo(t *testing.T) {
+//	    x := compute()
+//	    if x == nil {
+//	        t.Errorf("nil pointer received")
+//	    }
 //
-//         // t.Errorf does not abort the test, so if x is nil, the next line will panic.
-//         foo(*x)
-//     }
+//	    // t.Errorf does not abort the test, so if x is nil, the next line will panic.
+//	    foo(*x)
+//	}
 //
 // Staticcheck tries to deduce which functions abort control flow.
 // For example, it is aware that a function will not continue
@@ -1173,43 +1172,43 @@
 // this detection fails, in particular in the presence of
 // conditionals. Consider the following example:
 //
-//     func Log(msg string, level int) {
-//         fmt.Println(msg)
-//         if level == levelFatal {
-//             os.Exit(1)
-//         }
-//     }
+//	func Log(msg string, level int) {
+//	    fmt.Println(msg)
+//	    if level == levelFatal {
+//	        os.Exit(1)
+//	    }
+//	}
 //
-//     func Fatal(msg string) {
-//         Log(msg, levelFatal)
-//     }
+//	func Fatal(msg string) {
+//	    Log(msg, levelFatal)
+//	}
 //
-//     func fn(x *int) {
-//         if x == nil {
-//             Fatal("unexpected nil pointer")
-//         }
-//         fmt.Println(*x)
-//     }
+//	func fn(x *int) {
+//	    if x == nil {
+//	        Fatal("unexpected nil pointer")
+//	    }
+//	    fmt.Println(*x)
+//	}
 //
 // Staticcheck will flag the dereference of x, even though it is perfectly
 // safe. Staticcheck is not able to deduce that a call to
 // Fatal will exit the program. For the time being, the easiest
 // workaround is to modify the definition of Fatal like so:
 //
-//     func Fatal(msg string) {
-//         Log(msg, levelFatal)
-//         panic("unreachable")
-//     }
+//	func Fatal(msg string) {
+//	    Log(msg, levelFatal)
+//	    panic("unreachable")
+//	}
 //
 // We also hard-code functions from common logging packages such as
 // logrus. Please file an issue if we're missing support for a
 // popular package.
 //
 // Available since
-//     2020.1
 //
+//	2020.1
 //
-// SA5012
+// # SA5012
 //
 // passing odd-sized slice to function expecting even size
 //
@@ -1219,18 +1218,18 @@
 // and calling it with an odd number of elements would be an error.
 //
 // Available since
-//     2020.2
 //
+//	2020.2
 //
-// SA6000
+// # SA6000
 //
 // using regexp.Match or related in a loop, should use regexp.Compile
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA6001
+// # SA6001
 //
 // missing an optimization opportunity when indexing maps by byte slices
 //
@@ -1244,14 +1243,14 @@
 // the data can't change during the map lookup. This leads to the
 // counter-intuitive situation that
 //
-//     k := string(b)
-//     println(m[k])
-//     println(m[k])
+//	k := string(b)
+//	println(m[k])
+//	println(m[k])
 //
 // will be less efficient than
 //
-//     println(m[string(b)])
-//     println(m[string(b)])
+//	println(m[string(b)])
+//	println(m[string(b)])
 //
 // because the first version needs to copy and allocate, while the second
 // one does not.
@@ -1260,10 +1259,10 @@
 // f5f5a8b6209f84961687d993b93ea0d397f5d5bf in the Go repository.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA6002
+// # SA6002
 //
 // storing non-pointer values in sync.Pool allocates memory
 //
@@ -1281,10 +1280,10 @@
 // that discuss this problem.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA6003
+// # SA6003
 //
 // converting a string to a slice of runes before ranging over it
 //
@@ -1292,11 +1291,11 @@
 // the string to a slice of runes and looping over that, you can loop
 // over the string itself. That is,
 //
-//     for _, r := range s {}
+//	for _, r := range s {}
 //
 // and
 //
-//     for _, r := range []rune(s) {}
+//	for _, r := range []rune(s) {}
 //
 // will yield the same values. The first version, however, will be faster
 // and avoid unnecessary memory allocations.
@@ -1307,18 +1306,18 @@
 // the slice of runes.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA6005
+// # SA6005
 //
 // inefficient string comparison with strings.ToLower or strings.ToUpper
 //
 // Converting two strings to the same case and comparing them like so
 //
-//     if strings.ToLower(s1) == strings.ToLower(s2) {
-//         ...
-//     }
+//	if strings.ToLower(s1) == strings.ToLower(s2) {
+//	    ...
+//	}
 //
 // is significantly more expensive than comparing them with
 // strings.EqualFold(s1, s2). This is due to memory usage as well as
@@ -1335,67 +1334,67 @@
 // https://blog.digitalocean.com/how-to-efficiently-compare-strings-in-go/
 //
 // Available since
-//     2019.2
 //
+//	2019.2
 //
-// SA6006
+// # SA6006
 //
 // using io.WriteString to write []byte
 //
 // Using io.WriteString to write a slice of bytes, as in
 //
-//     io.WriteString(w, string(b))
+//	io.WriteString(w, string(b))
 //
 // is both unnecessary and inefficient. Converting from []byte to string
 // has to allocate and copy the data, and we could simply use w.Write(b)
 // instead.
 //
 // Available since
-//     2024.1
 //
+//	2024.1
 //
-// SA9001
+// # SA9001
 //
 // defers in range loops may not run when you expect them to
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA9002
+// # SA9002
 //
 // using a non-octal os.FileMode that looks like it was meant to be in octal.
 //
 // Available since
-//     2017.1
 //
+//	2017.1
 //
-// SA9003
+// # SA9003
 //
 // empty body in an if or else branch
 //
 // Available since
-//     2017.1, non-default
 //
+//	2017.1, non-default
 //
-// SA9004
+// # SA9004
 //
 // only the first constant has an explicit type
 //
 // In a constant declaration such as the following:
 //
-//     const (
-//         First byte = 1
-//         Second     = 2
-//     )
+//	const (
+//	    First byte = 1
+//	    Second     = 2
+//	)
 //
 // the constant Second does not have the same type as the constant First.
 // This construct shouldn't be confused with
 //
-//     const (
-//         First byte = iota
-//         Second
-//     )
+//	const (
+//	    First byte = iota
+//	    Second
+//	)
 //
 // where First and Second do indeed have the same type. The type is only
 // passed on when no explicit value is assigned to the constant.
@@ -1403,77 +1402,75 @@
 // When declaring enumerations with explicit values it is therefore
 // important not to write
 //
-//     const (
-//           EnumFirst EnumType = 1
-//           EnumSecond         = 2
-//           EnumThird          = 3
-//     )
+//	const (
+//	      EnumFirst EnumType = 1
+//	      EnumSecond         = 2
+//	      EnumThird          = 3
+//	)
 //
 // This discrepancy in types can cause various confusing behaviors and
 // bugs.
 //
-//
-// Wrong type in variable declarations
+// # Wrong type in variable declarations
 //
 // The most obvious issue with such incorrect enumerations expresses
 // itself as a compile error:
 //
-//     package pkg
+//	package pkg
 //
-//     const (
-//         EnumFirst  uint8 = 1
-//         EnumSecond       = 2
-//     )
+//	const (
+//	    EnumFirst  uint8 = 1
+//	    EnumSecond       = 2
+//	)
 //
-//     func fn(useFirst bool) {
-//         x := EnumSecond
-//         if useFirst {
-//             x = EnumFirst
-//         }
-//     }
+//	func fn(useFirst bool) {
+//	    x := EnumSecond
+//	    if useFirst {
+//	        x = EnumFirst
+//	    }
+//	}
 //
 // fails to compile with
 //
-//     ./const.go:11:5: cannot use EnumFirst (type uint8) as type int in assignment
+//	./const.go:11:5: cannot use EnumFirst (type uint8) as type int in assignment
 //
-//
-// Losing method sets
+// # Losing method sets
 //
 // A more subtle issue occurs with types that have methods and optional
 // interfaces. Consider the following:
 //
-//     package main
+//	package main
 //
-//     import "fmt"
+//	import "fmt"
 //
-//     type Enum int
+//	type Enum int
 //
-//     func (e Enum) String() string {
-//         return "an enum"
-//     }
+//	func (e Enum) String() string {
+//	    return "an enum"
+//	}
 //
-//     const (
-//         EnumFirst  Enum = 1
-//         EnumSecond      = 2
-//     )
+//	const (
+//	    EnumFirst  Enum = 1
+//	    EnumSecond      = 2
+//	)
 //
-//     func main() {
-//         fmt.Println(EnumFirst)
-//         fmt.Println(EnumSecond)
-//     }
+//	func main() {
+//	    fmt.Println(EnumFirst)
+//	    fmt.Println(EnumSecond)
+//	}
 //
 // This code will output
 //
-//     an enum
-//     2
+//	an enum
+//	2
 //
 // as EnumSecond has no explicit type, and thus defaults to int.
 //
 // Available since
-//     2019.1
 //
+//	2019.1
 //
-// SA9005
+// # SA9005
 //
 // trying to marshal a struct with no public fields nor custom marshaling
 //
@@ -1486,10 +1483,10 @@
 // flag empty structs.
 //
 // Available since
-//     2019.2
 //
+//	2019.2
 //
-// SA9006
+// # SA9006
 //
 // dubious bit shifting of a fixed size integer value
 //
@@ -1497,8 +1494,8 @@
 //
 // For instance:
 //
-//     v := int8(42)
-//     v >>= 8
+//	v := int8(42)
+//	v >>= 8
 //
 // will always result in 0.
 //
@@ -1506,18 +1503,18 @@
 // That is, int, uint and uintptr are never flagged to avoid potential false
 // positives in somewhat exotic but valid bit twiddling tricks:
 //
-//     // Clear any value above 32 bits if integers are more than 32 bits.
-//     func f(i int) int {
-//         v := i >> 32
-//         v = v << 32
-//         return i-v
-//     }
+//	// Clear any value above 32 bits if integers are more than 32 bits.
+//	func f(i int) int {
+//	    v := i >> 32
+//	    v = v << 32
+//	    return i-v
+//	}
 //
 // Available since
-//     2020.2
 //
+//	2020.2
 //
-// SA9007
+// # SA9007
 //
 // deleting a directory that shouldn't be deleted
 //
@@ -1529,8 +1526,8 @@
 //
 // Writing
 //
-//     d := os.TempDir()
-//     defer os.RemoveAll(d)
+//	d := os.TempDir()
+//	defer os.RemoveAll(d)
 //
 // in your unit tests will have a devastating effect on the stability of your system.
 //
@@ -1542,10 +1539,10 @@
 // - os.UserHomeDir
 //
 // Available since
-//     2022.1
 //
+//	2022.1
 //
-// SA9008
+// # SA9008
 //
 // else branch of a type assertion is probably not reading the right value
 //
@@ -1553,11 +1550,11 @@
 // foo := ...; foo {'), the same variables will also be in the scope of
 // the else branch. This means that in the following example
 //
-//     if x, ok := x.(int); ok {
-//         // ...
-//     } else {
-//         fmt.Printf("unexpected type %T", x)
-//     }
+//	if x, ok := x.(int); ok {
+//	    // ...
+//	} else {
+//	    fmt.Printf("unexpected type %T", x)
+//	}
 //
 // x in the else branch will refer to the x from x, ok
 // :=; it will not refer to the x that is being type-asserted. The
@@ -1566,10 +1563,10 @@
 // value 0 and the type int.
 //
 // Available since
-//     2022.1
 //
+//	2022.1
 //
-// SA9009
+// # SA9009
 //
 // ineffectual Go compiler directive
 //
@@ -1577,16 +1574,14 @@
 // with whitespace.
 //
 // Available since
-//     2024.1
 //
+//	2024.1
 //
-// EXPORTLOOPREF
+// # EXPORTLOOPREF
 //
 // checks for pointers to enclosing loop variables
 //
-// THELPER
+// # THELPER
 //
 // report unmarked test helpers
-//
-//
 package main
