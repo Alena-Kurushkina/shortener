@@ -2,9 +2,9 @@
 package generator
 
 import (
-	"strings"
-	"math/big"
 	"crypto/rand"
+	"math/big"
+	"strings"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
