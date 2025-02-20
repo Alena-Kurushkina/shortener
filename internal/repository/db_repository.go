@@ -139,23 +139,18 @@ func (r DBRepository) DeleteRecords(ctx context.Context, deleteItems []api.Delet
 	}
 	param, _ = strings.CutSuffix(param, ",")
 
-	query := `UPDATE shortening
+	stmt := `UPDATE shortening
 		SET is_deleted=true
 		FROM (
-			VALUES $1
-		) AS data(id_user, shortening)
+			VALUES` + param +
+		`) AS data(id_user, shortening)
 		WHERE shortening.useruuid=data.id_user
 			AND shortening.shorturl=data.shortening`
 
-	logger.Log.Info(query)
+	logger.Log.Info(stmt)
 
-	stmt,err:=r.database.PrepareContext(ctx, query)	
-	if err!=nil{
-		return err
-	}
-	defer stmt.Close()
+	sqlRes, err := r.database.ExecContext(ctx, stmt)
 
-	sqlRes, err := stmt.ExecContext(ctx,param)
 	if err != nil {
 		logger.Log.Errorf("Error while deletion: ", err.Error())
 	}
