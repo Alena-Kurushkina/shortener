@@ -208,11 +208,11 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 	var existError *sherr.AlreadyExistError
 	if errors.As(insertErr, &existError) {
 		// make response
-		responseData, errm := json.Marshal(ResultResponse{
+		responseData, err := json.Marshal(ResultResponse{
 			Result: sh.config.BaseURL + existError.ExistShortStr,
 		})
-		if errm != nil {
-			http.Error(res, errm.Error(), http.StatusInternalServerError)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		// make response
