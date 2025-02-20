@@ -16,6 +16,7 @@ type Config struct {
 	ServerAddress   string
 	FileStoragePath string
 	ConnectionStr   string
+	EnableHTTPS     bool
 }
 
 var (
@@ -34,6 +35,7 @@ func InitConfig() *Config {
 			flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080", "base address of shorten URL")
 			flag.StringVar(&cfg.FileStoragePath, "f", "", "path to storage file")
 			flag.StringVar(&cfg.ConnectionStr, "d", "", "connection string to database")
+			flag.BoolVar(&cfg.EnableHTTPS, "s", false, "enable HTTPS")
 
 			// parse flags
 			flag.Parse()
@@ -54,6 +56,10 @@ func InitConfig() *Config {
 			du, exists := os.LookupEnv("DATABASE_DSN")
 			if exists {
 				cfg.ConnectionStr = du
+			}
+			_, exists = os.LookupEnv("ENABLE_HTTPS")
+			if exists {
+				cfg.EnableHTTPS= true
 			}
 
 			// form BaseURL variable

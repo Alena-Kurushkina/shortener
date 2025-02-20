@@ -5,6 +5,7 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -43,7 +44,13 @@ func newClient() ShortenerClient {
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
-		}}
+		},
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
 
 	reqPing, err := http.NewRequest(http.MethodGet, endpoint+"ping", nil)
 	if err != nil {

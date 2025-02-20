@@ -7,6 +7,7 @@ import (
 	"net/http/pprof"
 
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/Alena-Kurushkina/shortener/internal/authenticator"
 	"github.com/Alena-Kurushkina/shortener/internal/compress"
@@ -67,8 +68,34 @@ func NewServer(hdl Handler, cfg *config.Config) *Server {
 // Run starts listening to server address and handling requests.
 func (s *Server) Run() {
 	logger.Log.Infof("Server is listening on %s", s.Config.ServerAddress)
-	err := http.ListenAndServe(s.Config.ServerAddress, s.Handler)
-	if err != nil {
-		panic(err)
+
+	if !s.Config.EnableHTTPS{
+		logger.Log.Infof("HTTPS disabled")
+
+		err := http.ListenAndServe(s.Config.ServerAddress, s.Handler)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		logger.Log.Infof("HTTPS enabled")
+
+		manager := &autocert.Manager{
+			// директория для хранения сертификатов
+			Cache:      autocert.DirCache("cache-dir"),
+			// функция, принимающая Terms of Service издателя сертификатов
+			Prompt:     autocert.AcceptTOS,
+			// перечень доменов, для которых будут поддерживаться сертификаты
+		// HostPolicy: autocert.HostWhitelist("mysite.ru", "www.mysite.ru"),
+		}
+
+		server:=&http.Server{
+			Addr: s.Config.ServerAddress,
+			Handler: s.Handler,
+			TLSConfig: manager.TLSConfig(),
+		}
+		err:=server.ListenAndServeTLS("","")
+		if err != nil {
+			panic(err)
+		}
 	}
 }
