@@ -5,6 +5,7 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"os"
 	"sync"
@@ -12,11 +13,16 @@ import (
 
 // A Config serves configuration variables.
 type Config struct {
-	BaseURL         string
-	ServerAddress   string
-	FileStoragePath string
-	ConnectionStr   string
-	EnableHTTPS     bool
+	ConfigPath string
+	Settings
+}
+
+type Settings struct {
+	BaseURL         string `json:"base_url"`
+	ServerAddress   string `json:"server_address"`
+	FileStoragePath string `json:"file_storage_path"`
+	ConnectionStr   string `json:"database_dsn"`
+	EnableHTTPS     bool   `json:"enable_https"`
 }
 
 var (
@@ -31,14 +37,39 @@ func InitConfig() *Config {
 			cfg = &Config{}
 
 			// define flags
-			flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "address of HTTP server")
-			flag.StringVar(&cfg.BaseURL, "b", "http://localhost:8080", "base address of shorten URL")
+			flag.StringVar(&cfg.ServerAddress, "a", "", "address of HTTP server")
+			flag.StringVar(&cfg.BaseURL, "b", "", "base address of shorten URL")
 			flag.StringVar(&cfg.FileStoragePath, "f", "", "path to storage file")
 			flag.StringVar(&cfg.ConnectionStr, "d", "", "connection string to database")
 			flag.BoolVar(&cfg.EnableHTTPS, "s", false, "enable HTTPS")
-
+			flag.StringVar(&cfg.ConfigPath, "c", "", "path to config file")
+			flag.StringVar(&cfg.ConfigPath, "config", "", "path to config file")
 			// parse flags
 			flag.Parse()
+
+			con, exists := os.LookupEnv("CONFIG")
+			if exists {
+				cfg.ConfigPath = con
+			}
+			if cfg.ConfigPath != "" {
+				settings:= &Settings{}
+				readConfigFromFile(cfg.ConfigPath, settings)
+				if cfg.BaseURL==""{
+					cfg.BaseURL=settings.BaseURL
+				}
+				if cfg.ConnectionStr==""{
+					cfg.ConnectionStr=settings.ConnectionStr
+				}
+				if !cfg.EnableHTTPS{
+					cfg.EnableHTTPS=settings.EnableHTTPS
+				}
+				if cfg.FileStoragePath==""{
+					cfg.FileStoragePath=settings.FileStoragePath
+				}
+				if cfg.ServerAddress==""{
+					cfg.ServerAddress=settings.ServerAddress
+				}
+			}
 
 			// read environment variables
 			sa, exists := os.LookupEnv("SERVER_ADDRESS")
@@ -59,7 +90,7 @@ func InitConfig() *Config {
 			}
 			_, exists = os.LookupEnv("ENABLE_HTTPS")
 			if exists {
-				cfg.EnableHTTPS= true
+				cfg.EnableHTTPS = true
 			}
 
 			// form BaseURL variable
@@ -68,4 +99,19 @@ func InitConfig() *Config {
 			}
 		})
 	return cfg
+}
+
+func readConfigFromFile(pathToConfig string, settings *Settings) error {
+	dir,err:=os.Getwd()
+	if err!=nil{
+		return err
+	}
+	data, err := os.ReadFile(dir+"/"+pathToConfig)
+    if err != nil {
+        return err
+    }
+    if err := json.Unmarshal(data, settings); err != nil {
+        return err
+    }
+    return nil
 }

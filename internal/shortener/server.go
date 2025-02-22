@@ -68,6 +68,7 @@ func NewServer(hdl Handler, cfg *config.Config) *Server {
 // Run starts listening to server address and handling requests.
 func (s *Server) Run() {
 	logger.Log.Infof("Server is listening on %s", s.Config.ServerAddress)
+	logger.Log.Infof("Base URL: %s", s.Config.BaseURL)
 
 	if !s.Config.EnableHTTPS{
 		logger.Log.Infof("HTTPS disabled")
