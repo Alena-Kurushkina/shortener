@@ -52,22 +52,22 @@ func InitConfig() *Config {
 				cfg.ConfigPath = con
 			}
 			if cfg.ConfigPath != "" {
-				settings:= &Settings{}
+				settings := &Settings{}
 				readConfigFromFile(cfg.ConfigPath, settings)
-				if cfg.BaseURL==""{
-					cfg.BaseURL=settings.BaseURL
+				if cfg.BaseURL == "" {
+					cfg.BaseURL = settings.BaseURL
 				}
-				if cfg.ConnectionStr==""{
-					cfg.ConnectionStr=settings.ConnectionStr
+				if cfg.ConnectionStr == "" {
+					cfg.ConnectionStr = settings.ConnectionStr
 				}
-				if !cfg.EnableHTTPS{
-					cfg.EnableHTTPS=settings.EnableHTTPS
+				if !cfg.EnableHTTPS {
+					cfg.EnableHTTPS = settings.EnableHTTPS
 				}
-				if cfg.FileStoragePath==""{
-					cfg.FileStoragePath=settings.FileStoragePath
+				if cfg.FileStoragePath == "" {
+					cfg.FileStoragePath = settings.FileStoragePath
 				}
-				if cfg.ServerAddress==""{
-					cfg.ServerAddress=settings.ServerAddress
+				if cfg.ServerAddress == "" {
+					cfg.ServerAddress = settings.ServerAddress
 				}
 			}
 
@@ -102,16 +102,16 @@ func InitConfig() *Config {
 }
 
 func readConfigFromFile(pathToConfig string, settings *Settings) error {
-	dir,err:=os.Getwd()
-	if err!=nil{
+	dir, err := os.Getwd()
+	if err != nil {
 		return err
 	}
-	data, err := os.ReadFile(dir+"/"+pathToConfig)
-    if err != nil {
-        return err
-    }
-    if err := json.Unmarshal(data, settings); err != nil {
-        return err
-    }
-    return nil
+	data, err := os.ReadFile(dir + "/" + pathToConfig)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(data, settings); err != nil {
+		return err
+	}
+	return nil
 }

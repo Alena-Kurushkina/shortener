@@ -70,7 +70,7 @@ func (s *Server) Run() {
 	logger.Log.Infof("Server is listening on %s", s.Config.ServerAddress)
 	logger.Log.Infof("Base URL: %s", s.Config.BaseURL)
 
-	if !s.Config.EnableHTTPS{
+	if !s.Config.EnableHTTPS {
 		logger.Log.Infof("HTTPS disabled")
 
 		err := http.ListenAndServe(s.Config.ServerAddress, s.Handler)
@@ -82,19 +82,19 @@ func (s *Server) Run() {
 
 		manager := &autocert.Manager{
 			// директория для хранения сертификатов
-			Cache:      autocert.DirCache("cache-dir"),
+			Cache: autocert.DirCache("cache-dir"),
 			// функция, принимающая Terms of Service издателя сертификатов
-			Prompt:     autocert.AcceptTOS,
+			Prompt: autocert.AcceptTOS,
 			// перечень доменов, для которых будут поддерживаться сертификаты
-		// HostPolicy: autocert.HostWhitelist("mysite.ru", "www.mysite.ru"),
+			// HostPolicy: autocert.HostWhitelist("mysite.ru", "www.mysite.ru"),
 		}
 
-		server:=&http.Server{
-			Addr: s.Config.ServerAddress,
-			Handler: s.Handler,
+		server := &http.Server{
+			Addr:      s.Config.ServerAddress,
+			Handler:   s.Handler,
 			TLSConfig: manager.TLSConfig(),
 		}
-		err:=server.ListenAndServeTLS("","")
+		err := server.ListenAndServeTLS("", "")
 		if err != nil {
 			panic(err)
 		}
