@@ -1,7 +1,10 @@
+// Shortener is a service that accepts and stores long urls and serves requests for corresponding shortenings
+
 package main
 
 import (
 	"context"
+	"fmt"
 	_ "net/http/pprof"
 
 	_ "github.com/golang/mock/mockgen/model"
@@ -13,7 +16,17 @@ import (
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
 )
 
+var (
+	buildVersion string = "N/A"
+	buildDate    string = "N/A"
+	buildCommit  string = "N/A"
+)
+
 func main() {
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+
 	cfg := config.InitConfig()
 	err := logger.Initialize()
 	if err != nil {

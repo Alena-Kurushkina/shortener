@@ -53,6 +53,7 @@ type (
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, reqMethod, path string, contentType string, body string) responseParams {
+	t.Helper()
 	request, err := http.NewRequest(reqMethod, ts.URL+path, strings.NewReader(body))
 	request.Header.Add("Content-Type", contentType)
 	require.NoError(t, err)
@@ -60,7 +61,10 @@ func testRequest(t *testing.T, ts *httptest.Server, reqMethod, path string, cont
 	resp, err := ts.Client().Do(request)
 	require.NoError(t, err)
 
-	defer resp.Body.Close()
+	defer func() {
+		tempErr := resp.Body.Close()
+		require.NoError(t, tempErr)
+	}()
 
 	rp := responseParams{}
 
@@ -327,13 +331,13 @@ func TestRouterJSONBatch(t *testing.T) {
 		batchElems  []batchElem
 	}
 
-	t.Run("positive short and expand test", func(t *testing.T) {
+	t.Run("positive shorten and expand test", func(t *testing.T) {
 		testDataShort := testData{
 			method:      http.MethodPost,
 			name:        "",
 			path:        "/api/shorten/batch",
 			contentType: "application/json",
-			body:        `[{"correlation_id":"dfgh345","original_url": "http://some-site.ru"},{"correlation_id":"kjhg1234","original_url": "http://testsite.ru"}]`,
+			body:        `[{"correlation_id":"8f4f4159-85d2-4aa6-bce8-4d9eb249c01b","original_url": "http://uk8d4ovutebb2.ru"},{"correlation_id":"450cffae-147a-4653-8b91-4b3c2e06df30","original_url": "http://yq1xxhwihp4l1.net/jelbsck49bdkp"}]`,
 			want:        want{},
 		}
 		wantResult := wantBatch{
@@ -341,13 +345,13 @@ func TestRouterJSONBatch(t *testing.T) {
 			contentType: "application/json",
 			batchElems: []batchElem{
 				{
-					correlarionID: "dfgh345",
-					originalURL:   "http://some-site.ru",
+					correlarionID: "8f4f4159-85d2-4aa6-bce8-4d9eb249c01b",
+					originalURL:   "http://uk8d4ovutebb2.ru",
 					baseURL:       cfg.BaseURL,
 				},
 				{
-					correlarionID: "kjhg1234",
-					originalURL:   "http://testsite.ru",
+					correlarionID: "450cffae-147a-4653-8b91-4b3c2e06df30",
+					originalURL:   "http://yq1xxhwihp4l1.net/jelbsck49bdkp",
 					baseURL:       cfg.BaseURL,
 				},
 			},

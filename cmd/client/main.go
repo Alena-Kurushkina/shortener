@@ -1,5 +1,7 @@
 package main
 
+//lint:file-ignore U1000 игнорируем неиспользуемый код, так как он нужен только при разработке
+
 import (
 	"bytes"
 	"compress/gzip"
@@ -30,11 +32,13 @@ type batchElement struct {
 	OriginalURL   string `json:"original_url"`
 	ShortURL      string `json:"short_url,omitempty"`
 }
-type shClient struct {
+
+// ShortenerClient represents http client to shortener service
+type ShortenerClient struct {
 	client *http.Client
 }
 
-func newClient() shClient {
+func newClient() ShortenerClient {
 	// добавляем HTTP-клиент
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -57,10 +61,10 @@ func newClient() shClient {
 	if resp.StatusCode != http.StatusOK {
 		panic("Ping failed")
 	}
-	return shClient{client: client}
+	return ShortenerClient{client: client}
 }
 
-func (cl *shClient) postTextPlainRequest() {
+func (cl *ShortenerClient) postTextPlainRequest() {
 	requestText, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(`http://ssite.ru`))
 	if err != nil {
 		panic(err)
@@ -87,7 +91,7 @@ func (cl *shClient) postTextPlainRequest() {
 	fmt.Println(string(body))
 }
 
-func (cl shClient) postJSONRequest() string {
+func (cl ShortenerClient) postJSONRequest() string {
 	request, err := http.NewRequest(http.MethodPost, endpointAPI, strings.NewReader(`{"url": "http://ssgreh.ru"}`))
 	if err != nil {
 		panic(err)
@@ -122,7 +126,7 @@ func (cl shClient) postJSONRequest() string {
 	return shortening
 }
 
-func (cl shClient) getTextPlainRequest(id uuid.UUID, shortening string) {
+func (cl ShortenerClient) getTextPlainRequest(id uuid.UUID, shortening string) {
 	getrequest, err := http.NewRequest(http.MethodGet, endpoint+shortening, nil)
 	if err != nil {
 		panic(err)
@@ -150,13 +154,14 @@ func (cl shClient) getTextPlainRequest(id uuid.UUID, shortening string) {
 	fmt.Println("Header Location ", origURLResponse.Header.Get("Location"))
 }
 
-func (cl shClient) postJSONBatchRequest(id uuid.UUID, param string) {
+func (cl ShortenerClient) postJSONBatchRequest(id uuid.UUID, param string) {
 	request, err := http.NewRequest(http.MethodPost, endpointAPIbatch, strings.NewReader(param))
 	if err != nil {
 		panic(err)
 	}
 
 	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("Accept-Encoding", "identity")
 
 	token, err := buildJWTString(id)
 	if err != nil {
@@ -193,7 +198,7 @@ func (cl shClient) postJSONBatchRequest(id uuid.UUID, param string) {
 	fmt.Println("Response body", rr1)
 }
 
-func (cl shClient) postGzipRequest() {
+func (cl ShortenerClient) postGzipRequest() {
 	var requestBody bytes.Buffer
 
 	// запрос с компрессией
@@ -265,7 +270,7 @@ func buildJWTString(id uuid.UUID) (string, error) {
 	return tokenString, nil
 }
 
-func (cl *shClient) postJWTTextPlainRequest() {
+func (cl *ShortenerClient) postJWTTextPlainRequest() {
 	requestText, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(`http://ssite.ru`))
 	if err != nil {
 		panic(err)
@@ -306,7 +311,7 @@ func (cl *shClient) postJWTTextPlainRequest() {
 	fmt.Println(string(body))
 }
 
-func (cl shClient) getJSONBatchRequest(id uuid.UUID) {
+func (cl ShortenerClient) getJSONBatchRequest(id uuid.UUID) {
 	request, err := http.NewRequest(http.MethodGet, endpointAPIselectAll, nil)
 	if err != nil {
 		panic(err)
@@ -353,7 +358,7 @@ func (cl shClient) getJSONBatchRequest(id uuid.UUID) {
 	}
 }
 
-func (cl shClient) deleteRequest(ids []string, id uuid.UUID) {
+func (cl ShortenerClient) deleteRequest(ids []string, id uuid.UUID) {
 	// var idStr = []string{}
 	// for _,v:=range ids {
 	// 	idStr=append(idStr, strconv.Itoa(v))
@@ -401,7 +406,7 @@ func main() {
 	//cl.getTextPlainRequest("0yofl1hsoCo3nlK")
 
 	id1 := uuid.NewV4()
-	cl.postJSONBatchRequest(id1, `[{"correlation_id":"dfgh345","original_url": "http://some-site.ru"},{"correlation_id":"kjhg1234","original_url": "http://testsite.ru"}]`)
+	cl.postJSONBatchRequest(id1, `[{"correlation_id":"8f4f4159-85d2-4aa6-bce8-4d9eb249c01b","original_url":"http://uk8d4ovutebb2.ru"},{"correlation_id":"450cffae-147a-4653-8b91-4b3c2e06df30","original_url":"http://yq1xxhwihp4l1.net/jelbsck49bdkp"}]`)
 	// id2:=uuid.NewV4()
 	// cl.postJSONBatchRequest(id2,`[{"correlation_id":"23456tg","original_url": "http://so-site.ru"},{"correlation_id":"sghgrh4","original_url": "http://tmdssujh.ru"}]`)
 

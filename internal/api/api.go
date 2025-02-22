@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,10 +16,13 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/Alena-Kurushkina/shortener/internal/config"
+	"github.com/Alena-Kurushkina/shortener/internal/generator"
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
 	"github.com/Alena-Kurushkina/shortener/internal/sherr"
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
 )
+
+const timeoutPing time.Duration = 30
 
 // Storager defines operations with data storage.
 type Storager interface {
@@ -54,7 +56,7 @@ func newShortenerObject(storage Storager, cfg *config.Config) *Shortener {
 func NewShortener(storage Storager, cfg *config.Config) shortener.Handler {
 	shortener := newShortenerObject(storage, cfg)
 
-	go shortener.flushDeleteItemsV2()
+	go shortener.flushDeleteItems()
 
 	return shortener
 }
@@ -66,32 +68,6 @@ type DeleteItem struct {
 }
 
 func (sh *Shortener) flushDeleteItems() {
-	ticker := time.NewTicker(10 * time.Second)
-
-	var items []DeleteItem
-
-	for {
-		select {
-		case msg := <-sh.deleteChan:
-			items = append(items, msg)
-		case <-ticker.C:
-			if len(items) == 0 {
-				continue
-			}
-			err := sh.repo.DeleteRecords(context.TODO(), items)
-			if err != nil {
-				logger.Log.Infof("Can't delete records", err.Error())
-				continue
-			}
-			logger.Log.Info("Patch of shortenings was deleted, patch length: " + strconv.Itoa(len(items)))
-			items = nil
-		case <-sh.done:
-			return
-		}
-	}
-}
-
-func (sh *Shortener) flushDeleteItemsV2() {
 	ticker := time.NewTicker(1 * time.Second)
 
 	items := make([]DeleteItem, 0, 1024)
@@ -152,7 +128,7 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 	logger.Log.Infof("Handle route /, method POST, body: %s", url)
 
 	// generate shortening
-	shortStr := generateRandomStringFaster(15)
+	shortStr := generator.GenerateRandomString(15)
 
 	q := req.URL.Query()
 	id, err := uuid.FromString(q.Get("userUUID"))
@@ -193,6 +169,7 @@ type ResultResponse struct {
 // CreateShorteningJSON handle POST HTTP request with long URL in body and retrieves base URL with shortening.
 // It handle only requests with content type application/json.
 // Response has content type application/json.
+// /api/shorten
 func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Request) {
 	// set response content type
 	res.Header().Set("Content-Type", "application/json")
@@ -225,7 +202,7 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 	logger.Log.Infof("Handle route /api/shorten, method POST, body: %s", url.URL)
 
 	// generate shortening
-	shortStr := generateRandomStringFaster(15)
+	shortStr := generator.GenerateRandomString(15)
 	insertErr := sh.repo.Insert(req.Context(), id, shortStr, url.URL)
 
 	var existError *sherr.AlreadyExistError
@@ -271,6 +248,7 @@ type BatchElement struct {
 // CreateShorteningJSONBatch handle POST HTTP request with set of long URLs in body and retrieves set of shortenings.
 // It handle only requests with content type application/json.
 // Response has content type application/json.
+// post /api/shorten/batch
 func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *http.Request) {
 	// set response content type
 	res.Header().Set("Content-Type", "application/json")
@@ -294,7 +272,7 @@ func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *htt
 	}
 	// generate shortening
 	for k := range batch {
-		batch[k].ShortURL = generateRandomStringFaster(15)
+		batch[k].ShortURL = generator.GenerateRandomString(15)
 	}
 
 	q := req.URL.Query()
@@ -305,7 +283,7 @@ func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *htt
 	}
 
 	// write to data storage
-	if err := sh.repo.InsertBatch(req.Context(), id, batch); err != nil {
+	if err = sh.repo.InsertBatch(req.Context(), id, batch); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -326,6 +304,7 @@ func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *htt
 // GetFullString handle GET request with shortening in URL parameter named id
 // and makes response with long URL in header's location value.
 // Response content type is text/plain.
+// get /{id}
 func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 	// parse parameter id from URL
 	param := chi.URLParam(req, "id")
@@ -352,6 +331,7 @@ func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 
 // GetUserAllShortenings handle GET request with no parameters and makes response with
 // all user's shortenings in body in json format.
+// get /api/user/urls
 func (sh *Shortener) GetUserAllShortenings(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 
@@ -392,6 +372,7 @@ func (sh *Shortener) GetUserAllShortenings(res http.ResponseWriter, req *http.Re
 // DeleteRecordJSON saves record's id for future deletion. It returns status Accepted on seccuss saving.
 // Deletion itself is performed periodically.
 // It handle only requests with content type application/json.
+// delete /api/user/urls
 func (sh *Shortener) DeleteRecordJSON(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 
@@ -431,7 +412,7 @@ func (sh *Shortener) DeleteRecordJSON(res http.ResponseWriter, req *http.Request
 // PingDB check connection to data storage.
 func (sh *Shortener) PingDB(res http.ResponseWriter, req *http.Request) {
 
-	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(req.Context(), timeoutPing*time.Second)
 	defer cancel()
 	if err := sh.repo.Ping(ctx); err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -440,33 +421,4 @@ func (sh *Shortener) PingDB(res http.ResponseWriter, req *http.Request) {
 
 	// make responce
 	res.WriteHeader(http.StatusOK)
-}
-
-// generateRandomString returns string of random characters of passed length.
-func generateRandomString(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	seed := rand.NewSource(time.Now().UnixNano())
-	random := rand.New(seed)
-
-	result := make([]byte, length)
-	for i := range result {
-		result[i] = charset[random.Intn(len(charset))]
-	}
-
-	return string(result)
-}
-
-// generateRandomStringFaster returns string of random characters of passed length.
-func generateRandomStringFaster(length int) string {
-	charset := []byte{97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90}
-	seed := rand.NewSource(time.Now().UnixNano())
-	random := rand.New(seed)
-
-	result := strings.Builder{}
-	result.Grow(length)
-	for i := 0; i < length; i++ {
-		result.WriteByte(charset[random.Intn(len(charset))])
-	}
-
-	return result.String()
 }
