@@ -54,6 +54,7 @@ func InitConfig() *Config {
 			if cfg.ConfigPath != "" {
 				settings := &Settings{}
 				readConfigFromFile(cfg.ConfigPath, settings)
+				
 				if cfg.BaseURL == "" {
 					cfg.BaseURL = settings.BaseURL
 				}
@@ -94,7 +95,7 @@ func InitConfig() *Config {
 			}
 
 			// form BaseURL variable
-			if cfg.BaseURL[len(cfg.BaseURL)-1:] != "/" {
+			if len(cfg.BaseURL)!=0 && cfg.BaseURL[len(cfg.BaseURL)-1:] != "/" {
 				cfg.BaseURL = cfg.BaseURL + "/"
 			}
 		})
