@@ -34,19 +34,25 @@ var (
 func InitConfig() *Config {
 	once.Do(
 		func() {
+			// default values
 			cfg = &Config{}
+			cfg.ServerAddress="localhost:8080"
+			cfg.BaseURL="http://localhost:8080"
 
 			// define flags
-			flag.StringVar(&cfg.ServerAddress, "a", "", "address of HTTP server")
-			flag.StringVar(&cfg.BaseURL, "b", "", "base address of shorten URL")
-			flag.StringVar(&cfg.FileStoragePath, "f", "", "path to storage file")
-			flag.StringVar(&cfg.ConnectionStr, "d", "", "connection string to database")
-			flag.BoolVar(&cfg.EnableHTTPS, "s", false, "enable HTTPS")
+			flagValues := &Config{}
+			flag.StringVar(&flagValues.ServerAddress, "a", "", "address of HTTP server")
+			flag.StringVar(&flagValues.BaseURL, "b", "", "base address of shorten URL")
+			flag.StringVar(&flagValues.FileStoragePath, "f", "", "path to storage file")
+			flag.StringVar(&flagValues.ConnectionStr, "d", "", "connection string to database")
+			flag.BoolVar(&flagValues.EnableHTTPS, "s", false, "enable HTTPS")
+			
 			flag.StringVar(&cfg.ConfigPath, "c", "", "path to config file")
 			flag.StringVar(&cfg.ConfigPath, "config", "", "path to config file")
 			// parse flags
 			flag.Parse()
 
+			// read configs from file
 			con, exists := os.LookupEnv("CONFIG")
 			if exists {
 				cfg.ConfigPath = con
@@ -54,20 +60,20 @@ func InitConfig() *Config {
 			if cfg.ConfigPath != "" {
 				settings := &Settings{}
 				readConfigFromFile(cfg.ConfigPath, settings)
-				
-				if cfg.BaseURL == "" {
+
+				if settings.BaseURL != "" {
 					cfg.BaseURL = settings.BaseURL
 				}
-				if cfg.ConnectionStr == "" {
+				if settings.ConnectionStr != "" {
 					cfg.ConnectionStr = settings.ConnectionStr
 				}
-				if !cfg.EnableHTTPS {
+				if !settings.EnableHTTPS {
 					cfg.EnableHTTPS = settings.EnableHTTPS
 				}
-				if cfg.FileStoragePath == "" {
+				if settings.FileStoragePath != "" {
 					cfg.FileStoragePath = settings.FileStoragePath
 				}
-				if cfg.ServerAddress == "" {
+				if settings.ServerAddress != "" {
 					cfg.ServerAddress = settings.ServerAddress
 				}
 			}
@@ -76,26 +82,36 @@ func InitConfig() *Config {
 			sa, exists := os.LookupEnv("SERVER_ADDRESS")
 			if exists {
 				cfg.ServerAddress = sa
+			} else if flagValues.ServerAddress != "" {
+				cfg.ServerAddress = flagValues.ServerAddress
 			}
 			bu, exists := os.LookupEnv("BASE_URL")
 			if exists {
 				cfg.BaseURL = bu
+			} else if flagValues.BaseURL != "" {
+				cfg.BaseURL = flagValues.BaseURL
 			}
 			fu, exists := os.LookupEnv("FILE_STORAGE_PATH")
 			if exists {
 				cfg.FileStoragePath = fu
+			} else if flagValues.FileStoragePath != "" {
+				cfg.FileStoragePath = flagValues.FileStoragePath
 			}
 			du, exists := os.LookupEnv("DATABASE_DSN")
 			if exists {
 				cfg.ConnectionStr = du
+			} else if flagValues.ConnectionStr != "" {
+				cfg.ConnectionStr = flagValues.ConnectionStr
 			}
 			_, exists = os.LookupEnv("ENABLE_HTTPS")
 			if exists {
 				cfg.EnableHTTPS = true
+			} else if flagValues.EnableHTTPS {
+				cfg.EnableHTTPS = flagValues.EnableHTTPS
 			}
 
 			// form BaseURL variable
-			if len(cfg.BaseURL)!=0 && cfg.BaseURL[len(cfg.BaseURL)-1:] != "/" {
+			if len(cfg.BaseURL) != 0 && cfg.BaseURL[len(cfg.BaseURL)-1:] != "/" {
 				cfg.BaseURL = cfg.BaseURL + "/"
 			}
 		})
