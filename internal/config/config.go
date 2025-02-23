@@ -36,8 +36,8 @@ func InitConfig() *Config {
 		func() {
 			// default values
 			cfg = &Config{}
-			cfg.ServerAddress="localhost:8080"
-			cfg.BaseURL="http://localhost:8080"
+			cfg.ServerAddress = "localhost:8080"
+			cfg.BaseURL = "http://localhost:8080"
 
 			// define flags
 			flagValues := &Config{}
@@ -46,7 +46,7 @@ func InitConfig() *Config {
 			flag.StringVar(&flagValues.FileStoragePath, "f", "", "path to storage file")
 			flag.StringVar(&flagValues.ConnectionStr, "d", "", "connection string to database")
 			flag.BoolVar(&flagValues.EnableHTTPS, "s", false, "enable HTTPS")
-			
+
 			flag.StringVar(&cfg.ConfigPath, "c", "", "path to config file")
 			flag.StringVar(&cfg.ConfigPath, "config", "", "path to config file")
 			// parse flags
