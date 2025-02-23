@@ -11,12 +11,13 @@ import (
 	"sync"
 )
 
-// A Config serves configuration variables.
+// A Config serves all configuration variables.
 type Config struct {
 	ConfigPath string
 	Settings
 }
 
+// A Settings keeps service main configurations.
 type Settings struct {
 	BaseURL         string `json:"base_url"`
 	ServerAddress   string `json:"server_address"`
