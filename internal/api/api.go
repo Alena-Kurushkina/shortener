@@ -77,21 +77,33 @@ func (sh *Shortener) flushDeleteItems() {
 		case msg := <-sh.deleteChan:
 			items = append(items, msg)
 		case <-ticker.C:
-			if len(items) == 0 {
-				continue
-			}
-			err := sh.repo.DeleteRecords(context.TODO(), items)
-			if err != nil {
-				logger.Log.Infof("Can't delete records", err.Error())
-				continue
-			}
-			logger.Log.Info("Patch of shortenings was deleted, patch length: " + strconv.Itoa(len(items)))
+			sh.deleteRecords(items)
 
 			items = make([]DeleteItem, 0, 1024)
 		case <-sh.done:
+			sh.deleteRecords(items)
 			return
 		}
 	}
+}
+
+func (sh *Shortener) deleteRecords(items []DeleteItem) {
+	if len(items) == 0 {
+		return
+	}
+	err := sh.repo.DeleteRecords(context.TODO(), items)
+	if err != nil {
+		logger.Log.Infof("Can't delete records", err.Error())
+		return
+	}
+	logger.Log.Info("Patch of shortenings was deleted, patch length: " + strconv.Itoa(len(items)))
+}
+
+// Shutdown finishes work gracefully
+func (sh *Shortener) Shutdown() {
+	logger.Log.Info("Start shortener shutdown")
+	close(sh.done)
+	sh.repo.Close()
 }
 
 // CreateShortening habdle POST HTTP request with long URL in body and retrieves base URL with shortening.
