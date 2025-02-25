@@ -48,7 +48,7 @@ func newShortenerObject(storage Storager, cfg *config.Config) *Shortener {
 		repo:       storage,
 		config:     cfg,
 		deleteChan: make(chan DeleteItem, 1024),
-		done:       make(chan struct{}, 1),
+		done:       make(chan struct{}),
 	}
 }
 
