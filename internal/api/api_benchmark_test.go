@@ -23,7 +23,7 @@ func waitEmpty(sh *Shortener) {
 func BenchmarkFlushDeleteItems(b *testing.B) {
 	ctrl := gomock.NewController(b)
 	m := NewMockStorager(ctrl)
-	//m.EXPECT().DeleteRecords(gomock.Any(), gomock.Any()).Return(nil)
+	m.EXPECT().DeleteRecords(gomock.Any(), gomock.Any()).Return(nil)
 
 	cfg = config.InitConfig()
 	sh := newShortenerObject(m, cfg)
