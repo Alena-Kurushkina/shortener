@@ -264,3 +264,28 @@ func (r DBRepository) SelectUserAll(ctx context.Context, id uuid.UUID) (records 
 	}
 	return records, err
 }
+
+// SelectStats returns number of shorten URLs and users numbers.
+func (r DBRepository) SelectStats(ctx context.Context) (stats *api.Stats, err error) {
+	stmt, err:=r.database.Prepare(`
+		SELECT 
+			count(id) as urls, 
+			count(distinct useruuid) as users 
+		FROM 
+			shortening
+	`)
+	if err!=nil{
+		return nil, err
+	}
+
+	row := stmt.QueryRowContext(ctx)
+
+	stats=&api.Stats{}
+	err = row.Scan(&stats.URLs, &stats.Users)
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+

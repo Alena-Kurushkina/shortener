@@ -24,6 +24,7 @@ type Settings struct {
 	FileStoragePath string `json:"file_storage_path"`
 	ConnectionStr   string `json:"database_dsn"`
 	EnableHTTPS     bool   `json:"enable_https"`
+	TrustedSubnet	string `json:"trusted_subnet"`
 }
 
 var (
@@ -47,21 +48,22 @@ func InitConfig() *Config {
 			flag.StringVar(&flagValues.FileStoragePath, "f", "", "path to storage file")
 			flag.StringVar(&flagValues.ConnectionStr, "d", "", "connection string to database")
 			flag.BoolVar(&flagValues.EnableHTTPS, "s", false, "enable HTTPS")
+			flag.StringVar(&flagValues.TrustedSubnet, "t", "", "trusted subnet")
 
 			flag.StringVar(&cfg.ConfigPath, "c", "", "path to config file")
 			flag.StringVar(&cfg.ConfigPath, "config", "", "path to config file")
-			// parse flags
 			flag.Parse()
 
-			// read configs from file
+			// check if config file was set
 			con, exists := os.LookupEnv("CONFIG")
 			if exists {
 				cfg.ConfigPath = con
-			}
+			}			
 			if cfg.ConfigPath != "" {
+				// read configs from file to settings var
 				settings := &Settings{}
 				readConfigFromFile(cfg.ConfigPath, settings)
-
+				// if config param exists, save it to main config var
 				if settings.BaseURL != "" {
 					cfg.BaseURL = settings.BaseURL
 				}
@@ -77,9 +79,14 @@ func InitConfig() *Config {
 				if settings.ServerAddress != "" {
 					cfg.ServerAddress = settings.ServerAddress
 				}
+				if settings.TrustedSubnet != ""{
+					cfg.TrustedSubnet = settings.TrustedSubnet
+				}
 			}
 
 			// read environment variables
+			// if it exists, save value to main config var
+			// else save flag value
 			sa, exists := os.LookupEnv("SERVER_ADDRESS")
 			if exists {
 				cfg.ServerAddress = sa
@@ -109,6 +116,13 @@ func InitConfig() *Config {
 				cfg.EnableHTTPS = true
 			} else if flagValues.EnableHTTPS {
 				cfg.EnableHTTPS = flagValues.EnableHTTPS
+			}
+
+			tu,exists:=os.LookupEnv("TRUSTED_SUBNET")
+			if exists {
+				cfg.TrustedSubnet = tu
+			} else if flagValues.TrustedSubnet != "" {
+				cfg.TrustedSubnet= flagValues.TrustedSubnet
 			}
 
 			// form BaseURL variable

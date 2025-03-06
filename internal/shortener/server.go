@@ -28,6 +28,7 @@ type Handler interface {
 	PingDB(res http.ResponseWriter, req *http.Request)
 	GetUserAllShortenings(res http.ResponseWriter, req *http.Request)
 	DeleteRecordJSON(res http.ResponseWriter, req *http.Request)
+	GetStats(res http.ResponseWriter, req *http.Request)
 	Shutdown()
 }
 
@@ -46,6 +47,8 @@ func newRouter(hi Handler) chi.Router {
 
 	r.Get("/ping", hi.PingDB)
 	r.Get("/{id}", hi.GetFullString)
+
+	r.Get("/api/internal/stats", hi.GetStats)
 
 	r.Get("/debug/pprof/", pprof.Index)
 	r.Get("/debug/pprof/profile", pprof.Profile)

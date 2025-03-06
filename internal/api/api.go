@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -32,6 +33,7 @@ type Storager interface {
 	SelectUserAll(ctx context.Context, userID uuid.UUID) ([]BatchElement, error)
 	DeleteRecords(ctx context.Context, deleteItems []DeleteItem) error
 	Ping(ctx context.Context) error
+	SelectStats(ctx context.Context) (stats *Stats, err error)
 	Close()
 }
 
@@ -430,6 +432,49 @@ func (sh *Shortener) PingDB(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// make responce
+	res.WriteHeader(http.StatusOK)
+}
+
+type Stats struct {
+	URLs int `json:"urls"`
+	Users int `json:"users"`
+}
+
+// GetStats handle GET request with no parameters and makes response with
+// number of shorten URLs and users number.
+// get /api/internal/stats
+func (sh *Shortener) GetStats(res http.ResponseWriter, req *http.Request) {
+	res.Header().Set("Content-Type", "application/json")
+
+	_, ipNetTr, err:=net.ParseCIDR(sh.config.TrustedSubnet)
+	if err !=nil{
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	ipStr := req.Header.Get("X-Real-IP")
+	subnet:=net.ParseIP(ipStr).Mask(ipNetTr.Mask)
+
+	if !subnet.Equal(ipNetTr.IP) || sh.config.TrustedSubnet == ""{
+		res.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	stats, err := sh.repo.SelectStats(req.Context())
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+
+	responseData, err := json.Marshal(stats)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	res.Write(responseData)
 
 	// make responce
 	res.WriteHeader(http.StatusOK)

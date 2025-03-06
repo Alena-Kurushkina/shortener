@@ -61,3 +61,7 @@ func (r *MemoryRepository) Close() {}
 
 // Ping satisfies the interface.
 func (r *MemoryRepository) Ping(_ context.Context) error { return nil }
+
+func (r *MemoryRepository) SelectStats(ctx context.Context) (stats *api.Stats, err error){
+	return nil, nil
+}

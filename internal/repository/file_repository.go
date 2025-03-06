@@ -165,3 +165,7 @@ func (r FileRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]api.
 func (r FileRepository) DeleteRecords(ctx context.Context, deletedItems []api.DeleteItem) error {
 	return nil
 }
+
+func (r FileRepository) SelectStats(ctx context.Context) (stats *api.Stats, err error){
+	return nil, nil
+}
