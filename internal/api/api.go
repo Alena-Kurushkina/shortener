@@ -361,7 +361,7 @@ func (sh *Shortener) GetUserAllShortenings(res http.ResponseWriter, req *http.Re
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
-	}
+	} 
 
 	if len(allRecords) == 0 {
 		res.WriteHeader(http.StatusNoContent)
@@ -467,7 +467,6 @@ func (sh *Shortener) GetStats(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 
 	responseData, err := json.Marshal(stats)
 	if err != nil {

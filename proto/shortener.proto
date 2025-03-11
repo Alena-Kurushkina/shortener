@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package shortener;
+
+option go_package = "shortener/proto";
+
+message UserID {
+  string user_id = 1;
+}
+
+message Error {
+    string error = 1;
+}
+
+message CreateShorteningRequest {
+  UserID user_id = 1;
+  string long_url = 2;
+}
+
+message ShorteningResponse {
+  Error error = 1;
+  string shortening = 2;
+}
+
+message CreateShorteningBatchRequest {
+  message BatchRequest {
+    string correlation_id = 1;
+    string long_url = 2;    
+  }
+  UserID user_id = 1;
+  repeated BatchRequest url_batch = 2;
+}
+
+message ShorteningBatchResponse {
+  message BatchResponse {
+    string correlation_id = 1;
+    string long_url = 2; 
+    string short_url = 3;
+  }
+  Error error = 1;
+  repeated BatchResponse url_batch = 2;
+}
+
+message LongURLRequest {
+  string short_url = 1;
+}
+
+message DeleteRecordRequest {
+  repeated string correlation_id = 1;
+}
+
+message GetStatsResponse {
+  Error error = 1;
+  int32 urls_count = 2;
+  int32 users_count = 3;
+}
+
+message None{}
+
+service Users {
+  rpc CreateShortening(CreateShorteningRequest) returns (ShorteningResponse);
+  rpc GetFullString(LongURLRequest) returns (ShorteningResponse);
+  rpc CreateShorteningBatch(CreateShorteningBatchRequest) returns (ShorteningBatchResponse);
+  rpc GetUserAllShortenings(UserID) returns (ShorteningBatchResponse);
+  rpc DeleteRecord(DeleteRecordRequest) returns (Error);
+  rpc GetStats(None) returns (GetStatsResponse);
+} 
