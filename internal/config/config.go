@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"flag"
 	"os"
+	"path/filepath"
 	"sync"
 )
 
@@ -19,11 +20,13 @@ type Config struct {
 
 // A Settings keeps service main configurations.
 type Settings struct {
-	BaseURL         string `json:"base_url"`
-	ServerAddress   string `json:"server_address"`
-	FileStoragePath string `json:"file_storage_path"`
-	ConnectionStr   string `json:"database_dsn"`
-	EnableHTTPS     bool   `json:"enable_https"`
+	BaseURL           string `json:"base_url"`
+	ServerAddress     string `json:"server_address"`
+	GRPCServerAddress string `json:"grpc_server_address"`
+	FileStoragePath   string `json:"file_storage_path"`
+	ConnectionStr     string `json:"database_dsn"`
+	EnableHTTPS       bool   `json:"enable_https"`
+	TrustedSubnet     string `json:"trusted_subnet"`
 }
 
 var (
@@ -39,29 +42,32 @@ func InitConfig() *Config {
 			cfg = &Config{}
 			cfg.ServerAddress = "localhost:8080"
 			cfg.BaseURL = "http://localhost:8080"
+			cfg.GRPCServerAddress = ":3200"
 
 			// define flags
 			flagValues := &Config{}
 			flag.StringVar(&flagValues.ServerAddress, "a", "", "address of HTTP server")
+			flag.StringVar(&flagValues.GRPCServerAddress, "g", "", "address of gRPC server")
 			flag.StringVar(&flagValues.BaseURL, "b", "", "base address of shorten URL")
 			flag.StringVar(&flagValues.FileStoragePath, "f", "", "path to storage file")
 			flag.StringVar(&flagValues.ConnectionStr, "d", "", "connection string to database")
 			flag.BoolVar(&flagValues.EnableHTTPS, "s", false, "enable HTTPS")
+			flag.StringVar(&flagValues.TrustedSubnet, "t", "", "trusted subnet")
 
 			flag.StringVar(&cfg.ConfigPath, "c", "", "path to config file")
 			flag.StringVar(&cfg.ConfigPath, "config", "", "path to config file")
-			// parse flags
 			flag.Parse()
 
-			// read configs from file
+			// check if config file was set
 			con, exists := os.LookupEnv("CONFIG")
 			if exists {
 				cfg.ConfigPath = con
 			}
 			if cfg.ConfigPath != "" {
+				// read configs from file to settings var
 				settings := &Settings{}
 				readConfigFromFile(cfg.ConfigPath, settings)
-
+				// if config param exists, save it to main config var
 				if settings.BaseURL != "" {
 					cfg.BaseURL = settings.BaseURL
 				}
@@ -77,14 +83,28 @@ func InitConfig() *Config {
 				if settings.ServerAddress != "" {
 					cfg.ServerAddress = settings.ServerAddress
 				}
+				if settings.GRPCServerAddress != "" {
+					cfg.GRPCServerAddress = settings.GRPCServerAddress
+				}
+				if settings.TrustedSubnet != "" {
+					cfg.TrustedSubnet = settings.TrustedSubnet
+				}
 			}
 
 			// read environment variables
+			// if it exists, save value to main config var
+			// else save flag value
 			sa, exists := os.LookupEnv("SERVER_ADDRESS")
 			if exists {
 				cfg.ServerAddress = sa
 			} else if flagValues.ServerAddress != "" {
 				cfg.ServerAddress = flagValues.ServerAddress
+			}
+			ga, exists := os.LookupEnv("GRPC_SERVER_ADDRESS")
+			if exists {
+				cfg.GRPCServerAddress = ga
+			} else if flagValues.GRPCServerAddress != "" {
+				cfg.GRPCServerAddress = flagValues.GRPCServerAddress
 			}
 			bu, exists := os.LookupEnv("BASE_URL")
 			if exists {
@@ -111,6 +131,13 @@ func InitConfig() *Config {
 				cfg.EnableHTTPS = flagValues.EnableHTTPS
 			}
 
+			tu, exists := os.LookupEnv("TRUSTED_SUBNET")
+			if exists {
+				cfg.TrustedSubnet = tu
+			} else if flagValues.TrustedSubnet != "" {
+				cfg.TrustedSubnet = flagValues.TrustedSubnet
+			}
+
 			// form BaseURL variable
 			if len(cfg.BaseURL) != 0 && cfg.BaseURL[len(cfg.BaseURL)-1:] != "/" {
 				cfg.BaseURL = cfg.BaseURL + "/"
@@ -124,7 +151,7 @@ func readConfigFromFile(pathToConfig string, settings *Settings) error {
 	if err != nil {
 		return err
 	}
-	data, err := os.ReadFile(dir + "/" + pathToConfig)
+	data, err := os.ReadFile(filepath.Join(dir,pathToConfig))
 	if err != nil {
 		return err
 	}

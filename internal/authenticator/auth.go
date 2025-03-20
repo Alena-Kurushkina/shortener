@@ -2,6 +2,7 @@
 package authenticator
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,6 +10,10 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	uuid "github.com/satori/go.uuid"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
 	"github.com/Alena-Kurushkina/shortener/internal/sherr"
@@ -149,4 +154,68 @@ func AuthMiddleware(h http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(logFn)
+}
+type userUUID string
+var userUUIDKey userUUID = "userUUID"
+
+// GRPCAuthInterceptor realises gRPC interceptor for user authentication.
+// It creates new user UUID if there is no token in cookie or token is invalid.
+// Otherwise it try to get user UUID from cookie.
+func GRPCAuthInterceptor(
+	ctx context.Context,
+	req any,
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (interface{}, error) {
+	var token string
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		values := md.Get("token")
+		if len(values) > 0 {
+			token = values[0]
+		}
+	}
+	if len(token) == 0 {
+		logger.Log.Infof("No token in request")
+
+		userID := uuid.NewV4()
+
+		jwt, err := buildJWTString(userID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed making JWT")
+		}
+		ctx = metadata.AppendToOutgoingContext(ctx, "token", jwt)
+
+		ctx = context.WithValue(ctx, userUUIDKey, userID.String())
+
+		logger.Log.Infof("New user was registered with id %s", userID)
+
+		return handler(ctx, req)
+	}
+
+	userID, err := getUserID(token)
+	if err != nil {
+		switch {
+		case errors.Is(err, sherr.ErrNoUserIDInToken):
+			return nil, status.Error(codes.Unauthenticated, err.Error())
+		case errors.Is(err, sherr.ErrTokenInvalid):
+			logger.Log.Infof("Token invalid")
+
+			userID = uuid.NewV4()
+
+			jwt, err := buildJWTString(userID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, "failed making JWT")
+			}
+			ctx = metadata.AppendToOutgoingContext(ctx, "token", jwt)
+
+			logger.Log.Infof("New user was registered with id %s", userID)
+		default:
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+	ctx = context.WithValue(ctx, userUUIDKey, userID.String())
+
+	logger.Log.Infof("Got user id %s from token", userID)
+
+	return handler(ctx, req)
 }

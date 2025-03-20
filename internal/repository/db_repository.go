@@ -9,7 +9,7 @@ import (
 
 	uuid "github.com/satori/go.uuid"
 
-	"github.com/Alena-Kurushkina/shortener/internal/api"
+	"github.com/Alena-Kurushkina/shortener/internal/core"
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
 	"github.com/Alena-Kurushkina/shortener/internal/sherr"
 )
@@ -22,12 +22,12 @@ type DBRepository struct {
 }
 
 // GetDB creates DBRepository object in first call, then returns it with no recreation.
-var GetDB func() (api.Storager, error)
+var GetDB func() (core.Storager, error)
 
 // newDBRepository initializes data storage in database.
-func newDBRepository(ctx context.Context, connectionStr string) (dbRep api.Storager, err error) {
+func newDBRepository(ctx context.Context, connectionStr string) (dbRep core.Storager, err error) {
 
-	dbInit := func() (api.Storager, error) {
+	dbInit := func() (core.Storager, error) {
 		dbRep := &DBRepository{}
 
 		db, err := sql.Open("pgx", connectionStr)
@@ -130,7 +130,7 @@ func (r DBRepository) Insert(ctx context.Context, userID uuid.UUID, insertedShor
 
 // DeleteRecords deletes records by their ids from storage.
 // It is getting array of DeleteItem on input.
-func (r DBRepository) DeleteRecords(ctx context.Context, deleteItems []api.DeleteItem) error {
+func (r DBRepository) DeleteRecords(ctx context.Context, deleteItems []core.DeleteItem) error {
 	param := ""
 	for _, v := range deleteItems {
 		for _, i := range v.IDs {
@@ -162,7 +162,7 @@ func (r DBRepository) DeleteRecords(ctx context.Context, deleteItems []api.Delet
 }
 
 // InsertBatch saves array of BatchElement to storage.
-func (r DBRepository) InsertBatch(ctx context.Context, userID uuid.UUID, batch []api.BatchElement) (err error) {
+func (r DBRepository) InsertBatch(ctx context.Context, userID uuid.UUID, batch []core.BatchElement) (err error) {
 	tx, err := r.database.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -231,7 +231,7 @@ func (r DBRepository) Select(ctx context.Context, key string) (string, error) {
 }
 
 // SelectUserAll returns all user's pairs of long URL and shortening from storage.
-func (r DBRepository) SelectUserAll(ctx context.Context, id uuid.UUID) (records []api.BatchElement, err error) {
+func (r DBRepository) SelectUserAll(ctx context.Context, id uuid.UUID) (records []core.BatchElement, err error) {
 	rows, err := r.selectAllStmt.QueryContext(ctx,
 		id.String(),
 	)
@@ -244,11 +244,11 @@ func (r DBRepository) SelectUserAll(ctx context.Context, id uuid.UUID) (records 
 		}
 	}()
 
-	records = make([]api.BatchElement, 0, 10)
+	records = make([]core.BatchElement, 0, 10)
 
 	// пробегаем по всем записям
 	for rows.Next() {
-		var v api.BatchElement
+		var v core.BatchElement
 		err = rows.Scan(&v.OriginalURL, &v.ShortURL)
 		if err != nil {
 			return nil, err
@@ -263,4 +263,28 @@ func (r DBRepository) SelectUserAll(ctx context.Context, id uuid.UUID) (records 
 		return nil, err
 	}
 	return records, err
+}
+
+// SelectStats returns number of shorten URLs and users numbers.
+func (r DBRepository) SelectStats(ctx context.Context) (stats *core.Stats, err error) {
+	stmt, err := r.database.Prepare(`
+		SELECT 
+			count(id) as urls, 
+			count(distinct useruuid) as users 
+		FROM 
+			shortening
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	row := stmt.QueryRowContext(ctx)
+
+	stats = &core.Stats{}
+	err = row.Scan(&stats.URLs, &stats.Users)
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }

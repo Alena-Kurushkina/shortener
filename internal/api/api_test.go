@@ -17,6 +17,7 @@ import (
 
 	"github.com/Alena-Kurushkina/shortener/internal/authenticator"
 	"github.com/Alena-Kurushkina/shortener/internal/config"
+	"github.com/Alena-Kurushkina/shortener/internal/core"
 )
 
 var cfg *config.Config
@@ -89,10 +90,12 @@ func TestRouter(t *testing.T) {
 	m.EXPECT().Insert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	cfg = config.InitConfig()
-	sh := NewShortener(m, cfg)
+	core := core.NewShortenerCore(m, cfg)
+	sh := &Shortener{
+		Core: core,
+	}
 
 	r := chi.NewRouter()
-
 	r.Use(middleware.Logger)
 	r.Get("/{id}", sh.GetFullString)
 	r.Group(func(r chi.Router) {
@@ -185,7 +188,11 @@ func TestRouterJSON(t *testing.T) {
 	m.EXPECT().Insert(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	//m.EXPECT().InsertBatch(gomock.Any(),gomock.Any(),gomock.Any()).Return(nil)
 
-	sh := NewShortener(m, cfg)
+	cfg = config.InitConfig()
+	core := core.NewShortenerCore(m, cfg)
+	sh := &Shortener{
+		Core: core,
+	}
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -303,7 +310,11 @@ func TestRouterJSONBatch(t *testing.T) {
 
 	m.EXPECT().InsertBatch(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
-	sh := NewShortener(m, cfg)
+	cfg = config.InitConfig()
+	core := core.NewShortenerCore(m, cfg)
+	sh := &Shortener{
+		Core: core,
+	}
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
