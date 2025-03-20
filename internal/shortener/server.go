@@ -73,33 +73,14 @@ func NewServer(core *core.ShortenerCore, cfg *config.Config, idleConnsChan chan 
 	}
 
 	srv := &Server{
-		//Handler: newRouter(hdl),
 		HTTPServer: http.Server{
 			Handler: newRouter(&hdl),
 			Addr:    cfg.ServerAddress,
 		},
-		Config: cfg,
-		//Shortener: hdl,
+		Config: cfg,		
 		// через этот канал сообщим основному потоку, что соединения закрыты
 		IdleConnsClosed: idleConnsChan,
 	}
-	// // канал для перенаправления прерываний
-	// sigint := make(chan os.Signal, 1)
-	// // регистрируем перенаправление прерываний
-	// signal.Notify(sigint, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
-	// // запускаем горутину обработки пойманных прерываний
-	// go func() {
-	// 	// читаем из канала прерываний
-	// 	<-sigint
-	// 	// запускаем процедуру graceful shutdown
-	// 	if err := srv.HTTPServer.Shutdown(context.Background()); err != nil {
-	// 		// ошибки закрытия Listener
-	// 		logger.Log.Errorf("HTTP server Shutdown: %v", err)
-	// 	}
-	// 	logger.Log.Info("HTTP server shutdown seccussfully")
-	// 	// сообщаем основному потоку, что все сетевые соединения обработаны и закрыты
-	// 	close(srv.IdleConnsClosed)
-	// }()
 
 	return srv
 }

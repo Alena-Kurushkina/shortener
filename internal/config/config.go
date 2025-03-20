@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"flag"
 	"os"
+	"path/filepath"
 	"sync"
 )
 
@@ -150,7 +151,7 @@ func readConfigFromFile(pathToConfig string, settings *Settings) error {
 	if err != nil {
 		return err
 	}
-	data, err := os.ReadFile(dir + "/" + pathToConfig)
+	data, err := os.ReadFile(filepath.Join(dir,pathToConfig))
 	if err != nil {
 		return err
 	}

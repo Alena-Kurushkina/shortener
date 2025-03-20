@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	_ "github.com/golang/mock/mockgen/model"
 
@@ -42,14 +43,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	//defer repo.Close() //done in shutdown
 
 	// через него сообщаем основному потоку, что все сетевые соединения обработаны и закрыты
 	idleConnsClosed := make(chan struct{})
 
 	core := core.NewShortenerCore(repo, cfg)
 
-	// sh := api.NewShortener(core)
 	httpServer := shortener.NewServer(core, cfg, idleConnsClosed)
 	rpcServer := shortener.NewServerGRPC(core, cfg, idleConnsClosed)
 
@@ -62,7 +61,8 @@ func main() {
 		// читаем из канала прерываний
 		<-sigint
 		// запускаем процедуру graceful shutdown
-		if err := httpServer.HTTPServer.Shutdown(context.Background()); err != nil {
+		ctx, _:=context.WithTimeout(context.Background(), 10*time.Second)
+		if err := httpServer.HTTPServer.Shutdown(ctx); err != nil {
 			// ошибки закрытия Listener
 			logger.Log.Errorf("HTTP server Shutdown: %v", err)
 		}
