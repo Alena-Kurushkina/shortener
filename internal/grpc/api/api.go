@@ -34,7 +34,7 @@ func NewShortenerGRPC(core *core.ShortenerCore) *ShortenerGRPC {
 	}
 }
 
-func extractUserIdFromCtx(ctx context.Context) (uuid.UUID, error) {
+func extractUserIDFromCtx(ctx context.Context) (uuid.UUID, error) {
 	id, ok := ctx.Value("userUUID").(string)
 	if !ok {
 		return uuid.Nil, fmt.Errorf("can't extract user id from context")
@@ -48,7 +48,7 @@ func extractUserIdFromCtx(ctx context.Context) (uuid.UUID, error) {
 
 // CreateShortening get long URL in body and retrieves base URL with shortening.
 func (s *ShortenerGRPC) CreateShortening(ctx context.Context, in *pb.CreateShorteningRequest) (*pb.ShorteningResponse, error) {
-	userID, err := extractUserIdFromCtx(ctx)
+	userID, err := extractUserIDFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (s *ShortenerGRPC) CreateShortening(ctx context.Context, in *pb.CreateShort
 func (s *ShortenerGRPC) CreateShorteningBatch(ctx context.Context, in *pb.CreateShorteningBatchRequest) (*pb.ShorteningBatchResponse, error) {
 	var response pb.ShorteningBatchResponse
 
-	userID, err := extractUserIdFromCtx(ctx)
+	userID, err := extractUserIDFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (s *ShortenerGRPC) GetFullString(ctx context.Context, in *pb.LongURLRequest
 // DeleteRecord saves record's id for future deletion.
 // Deletion itself is performed periodically.
 func (s *ShortenerGRPC) DeleteRecord(ctx context.Context, in *pb.DeleteRecordRequest) (*pb.None, error) {
-	userID, err := extractUserIdFromCtx(ctx)
+	userID, err := extractUserIDFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func (s *ShortenerGRPC) GetStats(ctx context.Context, in *pb.None) (*pb.GetStats
 
 // GetUserAllShortenings returns all user's shortenings.
 func (s *ShortenerGRPC) GetUserAllShortenings(ctx context.Context, in *pb.UserID) (*pb.ShorteningBatchResponse, error) {
-	userID, err := extractUserIdFromCtx(ctx)
+	userID, err := extractUserIDFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}

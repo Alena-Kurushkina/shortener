@@ -193,7 +193,11 @@ func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *htt
 	}
 
 	batch, err = sh.Core.CreateShorteningBatch(req.Context(), id, batch)
-
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	
 	responseData, err := json.Marshal(batch)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)

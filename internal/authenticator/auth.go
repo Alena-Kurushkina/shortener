@@ -155,6 +155,8 @@ func AuthMiddleware(h http.Handler) http.Handler {
 
 	return http.HandlerFunc(logFn)
 }
+type userUUID string
+var userUUIDKey userUUID = "userUUID"
 
 // GRPCAuthInterceptor realises gRPC interceptor for user authentication.
 // It creates new user UUID if there is no token in cookie or token is invalid.
@@ -183,7 +185,7 @@ func GRPCAuthInterceptor(
 		}
 		ctx = metadata.AppendToOutgoingContext(ctx, "token", jwt)
 
-		ctx = context.WithValue(ctx, "userUUID", userID.String())
+		ctx = context.WithValue(ctx, userUUIDKey, userID.String())
 
 		logger.Log.Infof("New user was registered with id %s", userID)
 
@@ -211,7 +213,7 @@ func GRPCAuthInterceptor(
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
-	ctx = context.WithValue(ctx, "userUUID", userID.String())
+	ctx = context.WithValue(ctx, userUUIDKey, userID.String())
 
 	logger.Log.Infof("Got user id %s from token", userID)
 
