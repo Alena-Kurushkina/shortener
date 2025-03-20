@@ -3,10 +3,15 @@
 package shortener
 
 import (
+	"context"
 	"net/http"
 	"net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/Alena-Kurushkina/shortener/internal/authenticator"
 	"github.com/Alena-Kurushkina/shortener/internal/compress"
@@ -23,12 +28,16 @@ type Handler interface {
 	PingDB(res http.ResponseWriter, req *http.Request)
 	GetUserAllShortenings(res http.ResponseWriter, req *http.Request)
 	DeleteRecordJSON(res http.ResponseWriter, req *http.Request)
+	Shutdown()
 }
 
 // A Server aggregates handler and config.
 type Server struct {
-	Handler chi.Router
-	Config  *config.Config
+	HTTPServer http.Server
+	Shortener  Handler
+	//Handler chi.Router
+	Config          *config.Config
+	IdleConnsClosed chan struct{}
 }
 
 // NewRouter creates new routes and middlewares.
@@ -58,17 +67,69 @@ func newRouter(hi Handler) chi.Router {
 
 // NewServer initializes new server with config and handler.
 func NewServer(hdl Handler, cfg *config.Config) *Server {
-	return &Server{
-		Handler: newRouter(hdl),
-		Config:  cfg,
+	srv := &Server{
+		//Handler: newRouter(hdl),
+		HTTPServer: http.Server{
+			Handler: newRouter(hdl),
+			Addr:    cfg.ServerAddress,
+		},
+		Config:    cfg,
+		Shortener: hdl,
+		// через этот канал сообщим основному потоку, что соединения закрыты
+		IdleConnsClosed: make(chan struct{}),
 	}
+	// канал для перенаправления прерываний
+	sigint := make(chan os.Signal, 1)
+	// регистрируем перенаправление прерываний
+	signal.Notify(sigint, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	// запускаем горутину обработки пойманных прерываний
+	go func() {
+		// читаем из канала прерываний
+		<-sigint
+		// запускаем процедуру graceful shutdown
+		if err := srv.HTTPServer.Shutdown(context.Background()); err != nil {
+			// ошибки закрытия Listener
+			logger.Log.Errorf("HTTP server Shutdown: %v", err)
+		}
+		logger.Log.Info("HTTP server shutdown seccussfully")
+		// сообщаем основному потоку, что все сетевые соединения обработаны и закрыты
+		close(srv.IdleConnsClosed)
+	}()
+
+	return srv
 }
 
 // Run starts listening to server address and handling requests.
 func (s *Server) Run() {
 	logger.Log.Infof("Server is listening on %s", s.Config.ServerAddress)
-	err := http.ListenAndServe(s.Config.ServerAddress, s.Handler)
-	if err != nil {
-		panic(err)
+	logger.Log.Infof("Base URL: %s", s.Config.BaseURL)
+
+	if !s.Config.EnableHTTPS {
+		logger.Log.Infof("HTTPS disabled")
+
+		if err := s.HTTPServer.ListenAndServe(); err != http.ErrServerClosed {
+			logger.Log.Fatalf("HTTP server ListenAndServe: %v", err)
+		}
+	} else {
+		logger.Log.Infof("HTTPS enabled")
+
+		manager := &autocert.Manager{
+			// директория для хранения сертификатов
+			Cache: autocert.DirCache("cache-dir"),
+			// функция, принимающая Terms of Service издателя сертификатов
+			Prompt: autocert.AcceptTOS,
+		}
+
+		s.HTTPServer.TLSConfig = manager.TLSConfig()
+		if err := s.HTTPServer.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
+			logger.Log.Fatalf("HTTP server ListenAndServe: %v", err)
+		}
 	}
+	// ждём завершения процедуры graceful shutdown
+	<-s.IdleConnsClosed
+	// получили оповещение о завершении
+	// здесь можно освобождать ресурсы перед выходом,
+	// например закрыть соединение с базой данных
+	s.Shortener.Shutdown()
+	logger.Log.Info("Server Shutdown gracefully")
 }
