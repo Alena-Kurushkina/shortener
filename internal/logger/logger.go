@@ -2,10 +2,12 @@
 package logger
 
 import (
+	"context"
 	"net/http"
 	"time"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 // Log represents global var for logging.
@@ -90,4 +92,14 @@ func LogMiddleware(h http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(logFn)
+}
+
+func GRPCLogInterceptor(
+	ctx context.Context,
+	req any,
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (interface{}, error) {
+	Log.Infof("gRPC request to method: %s", info.FullMethod)
+	return handler(ctx, req)
 }

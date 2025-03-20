@@ -8,6 +8,7 @@ package proto
 
 import (
 	context "context"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -19,291 +20,291 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Users_CreateShortening_FullMethodName      = "/shortener.Users/CreateShortening"
-	Users_GetFullString_FullMethodName         = "/shortener.Users/GetFullString"
-	Users_CreateShorteningBatch_FullMethodName = "/shortener.Users/CreateShorteningBatch"
-	Users_GetUserAllShortenings_FullMethodName = "/shortener.Users/GetUserAllShortenings"
-	Users_DeleteRecord_FullMethodName          = "/shortener.Users/DeleteRecord"
-	Users_GetStats_FullMethodName              = "/shortener.Users/GetStats"
+	Shortener_CreateShortening_FullMethodName      = "/shortener.Shortener/CreateShortening"
+	Shortener_GetFullString_FullMethodName         = "/shortener.Shortener/GetFullString"
+	Shortener_CreateShorteningBatch_FullMethodName = "/shortener.Shortener/CreateShorteningBatch"
+	Shortener_GetUserAllShortenings_FullMethodName = "/shortener.Shortener/GetUserAllShortenings"
+	Shortener_DeleteRecord_FullMethodName          = "/shortener.Shortener/DeleteRecord"
+	Shortener_GetStats_FullMethodName              = "/shortener.Shortener/GetStats"
 )
 
-// UsersClient is the client API for Users service.
+// ShortenerClient is the client API for Shortener service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type UsersClient interface {
+type ShortenerClient interface {
 	CreateShortening(ctx context.Context, in *CreateShorteningRequest, opts ...grpc.CallOption) (*ShorteningResponse, error)
-	GetFullString(ctx context.Context, in *LongURLRequest, opts ...grpc.CallOption) (*ShorteningResponse, error)
+	GetFullString(ctx context.Context, in *LongURLRequest, opts ...grpc.CallOption) (*LongURLResponse, error)
 	CreateShorteningBatch(ctx context.Context, in *CreateShorteningBatchRequest, opts ...grpc.CallOption) (*ShorteningBatchResponse, error)
 	GetUserAllShortenings(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*ShorteningBatchResponse, error)
-	DeleteRecord(ctx context.Context, in *DeleteRecordRequest, opts ...grpc.CallOption) (*Error, error)
+	DeleteRecord(ctx context.Context, in *DeleteRecordRequest, opts ...grpc.CallOption) (*None, error)
 	GetStats(ctx context.Context, in *None, opts ...grpc.CallOption) (*GetStatsResponse, error)
 }
 
-type usersClient struct {
+type shortenerClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewUsersClient(cc grpc.ClientConnInterface) UsersClient {
-	return &usersClient{cc}
+func NewShortenerClient(cc grpc.ClientConnInterface) ShortenerClient {
+	return &shortenerClient{cc}
 }
 
-func (c *usersClient) CreateShortening(ctx context.Context, in *CreateShorteningRequest, opts ...grpc.CallOption) (*ShorteningResponse, error) {
+func (c *shortenerClient) CreateShortening(ctx context.Context, in *CreateShorteningRequest, opts ...grpc.CallOption) (*ShorteningResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ShorteningResponse)
-	err := c.cc.Invoke(ctx, Users_CreateShortening_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Shortener_CreateShortening_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *usersClient) GetFullString(ctx context.Context, in *LongURLRequest, opts ...grpc.CallOption) (*ShorteningResponse, error) {
+func (c *shortenerClient) GetFullString(ctx context.Context, in *LongURLRequest, opts ...grpc.CallOption) (*LongURLResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ShorteningResponse)
-	err := c.cc.Invoke(ctx, Users_GetFullString_FullMethodName, in, out, cOpts...)
+	out := new(LongURLResponse)
+	err := c.cc.Invoke(ctx, Shortener_GetFullString_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *usersClient) CreateShorteningBatch(ctx context.Context, in *CreateShorteningBatchRequest, opts ...grpc.CallOption) (*ShorteningBatchResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ShorteningBatchResponse)
-	err := c.cc.Invoke(ctx, Users_CreateShorteningBatch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *usersClient) GetUserAllShortenings(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*ShorteningBatchResponse, error) {
+func (c *shortenerClient) CreateShorteningBatch(ctx context.Context, in *CreateShorteningBatchRequest, opts ...grpc.CallOption) (*ShorteningBatchResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ShorteningBatchResponse)
-	err := c.cc.Invoke(ctx, Users_GetUserAllShortenings_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Shortener_CreateShorteningBatch_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *usersClient) DeleteRecord(ctx context.Context, in *DeleteRecordRequest, opts ...grpc.CallOption) (*Error, error) {
+func (c *shortenerClient) GetUserAllShortenings(ctx context.Context, in *UserID, opts ...grpc.CallOption) (*ShorteningBatchResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Error)
-	err := c.cc.Invoke(ctx, Users_DeleteRecord_FullMethodName, in, out, cOpts...)
+	out := new(ShorteningBatchResponse)
+	err := c.cc.Invoke(ctx, Shortener_GetUserAllShortenings_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *usersClient) GetStats(ctx context.Context, in *None, opts ...grpc.CallOption) (*GetStatsResponse, error) {
+func (c *shortenerClient) DeleteRecord(ctx context.Context, in *DeleteRecordRequest, opts ...grpc.CallOption) (*None, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(None)
+	err := c.cc.Invoke(ctx, Shortener_DeleteRecord_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *shortenerClient) GetStats(ctx context.Context, in *None, opts ...grpc.CallOption) (*GetStatsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetStatsResponse)
-	err := c.cc.Invoke(ctx, Users_GetStats_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Shortener_GetStats_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// UsersServer is the server API for Users service.
-// All implementations must embed UnimplementedUsersServer
+// ShortenerServer is the server API for Shortener service.
+// All implementations must embed UnimplementedShortenerServer
 // for forward compatibility.
-type UsersServer interface {
+type ShortenerServer interface {
 	CreateShortening(context.Context, *CreateShorteningRequest) (*ShorteningResponse, error)
-	GetFullString(context.Context, *LongURLRequest) (*ShorteningResponse, error)
+	GetFullString(context.Context, *LongURLRequest) (*LongURLResponse, error)
 	CreateShorteningBatch(context.Context, *CreateShorteningBatchRequest) (*ShorteningBatchResponse, error)
 	GetUserAllShortenings(context.Context, *UserID) (*ShorteningBatchResponse, error)
-	DeleteRecord(context.Context, *DeleteRecordRequest) (*Error, error)
+	DeleteRecord(context.Context, *DeleteRecordRequest) (*None, error)
 	GetStats(context.Context, *None) (*GetStatsResponse, error)
-	mustEmbedUnimplementedUsersServer()
+	mustEmbedUnimplementedShortenerServer()
 }
 
-// UnimplementedUsersServer must be embedded to have
+// UnimplementedShortenerServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedUsersServer struct{}
+type UnimplementedShortenerServer struct{}
 
-func (UnimplementedUsersServer) CreateShortening(context.Context, *CreateShorteningRequest) (*ShorteningResponse, error) {
+func (UnimplementedShortenerServer) CreateShortening(context.Context, *CreateShorteningRequest) (*ShorteningResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateShortening not implemented")
 }
-func (UnimplementedUsersServer) GetFullString(context.Context, *LongURLRequest) (*ShorteningResponse, error) {
+func (UnimplementedShortenerServer) GetFullString(context.Context, *LongURLRequest) (*LongURLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetFullString not implemented")
 }
-func (UnimplementedUsersServer) CreateShorteningBatch(context.Context, *CreateShorteningBatchRequest) (*ShorteningBatchResponse, error) {
+func (UnimplementedShortenerServer) CreateShorteningBatch(context.Context, *CreateShorteningBatchRequest) (*ShorteningBatchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateShorteningBatch not implemented")
 }
-func (UnimplementedUsersServer) GetUserAllShortenings(context.Context, *UserID) (*ShorteningBatchResponse, error) {
+func (UnimplementedShortenerServer) GetUserAllShortenings(context.Context, *UserID) (*ShorteningBatchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserAllShortenings not implemented")
 }
-func (UnimplementedUsersServer) DeleteRecord(context.Context, *DeleteRecordRequest) (*Error, error) {
+func (UnimplementedShortenerServer) DeleteRecord(context.Context, *DeleteRecordRequest) (*None, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRecord not implemented")
 }
-func (UnimplementedUsersServer) GetStats(context.Context, *None) (*GetStatsResponse, error) {
+func (UnimplementedShortenerServer) GetStats(context.Context, *None) (*GetStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStats not implemented")
 }
-func (UnimplementedUsersServer) mustEmbedUnimplementedUsersServer() {}
-func (UnimplementedUsersServer) testEmbeddedByValue()               {}
+func (UnimplementedShortenerServer) mustEmbedUnimplementedShortenerServer() {}
+func (UnimplementedShortenerServer) testEmbeddedByValue()                   {}
 
-// UnsafeUsersServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to UsersServer will
+// UnsafeShortenerServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ShortenerServer will
 // result in compilation errors.
-type UnsafeUsersServer interface {
-	mustEmbedUnimplementedUsersServer()
+type UnsafeShortenerServer interface {
+	mustEmbedUnimplementedShortenerServer()
 }
 
-func RegisterUsersServer(s grpc.ServiceRegistrar, srv UsersServer) {
-	// If the following call pancis, it indicates UnimplementedUsersServer was
+func RegisterShortenerServer(s grpc.ServiceRegistrar, srv ShortenerServer) {
+	// If the following call pancis, it indicates UnimplementedShortenerServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&Users_ServiceDesc, srv)
+	s.RegisterService(&Shortener_ServiceDesc, srv)
 }
 
-func _Users_CreateShortening_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Shortener_CreateShortening_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateShorteningRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersServer).CreateShortening(ctx, in)
+		return srv.(ShortenerServer).CreateShortening(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Users_CreateShortening_FullMethodName,
+		FullMethod: Shortener_CreateShortening_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersServer).CreateShortening(ctx, req.(*CreateShorteningRequest))
+		return srv.(ShortenerServer).CreateShortening(ctx, req.(*CreateShorteningRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Users_GetFullString_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Shortener_GetFullString_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LongURLRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersServer).GetFullString(ctx, in)
+		return srv.(ShortenerServer).GetFullString(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Users_GetFullString_FullMethodName,
+		FullMethod: Shortener_GetFullString_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersServer).GetFullString(ctx, req.(*LongURLRequest))
+		return srv.(ShortenerServer).GetFullString(ctx, req.(*LongURLRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Users_CreateShorteningBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Shortener_CreateShorteningBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateShorteningBatchRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersServer).CreateShorteningBatch(ctx, in)
+		return srv.(ShortenerServer).CreateShorteningBatch(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Users_CreateShorteningBatch_FullMethodName,
+		FullMethod: Shortener_CreateShorteningBatch_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersServer).CreateShorteningBatch(ctx, req.(*CreateShorteningBatchRequest))
+		return srv.(ShortenerServer).CreateShorteningBatch(ctx, req.(*CreateShorteningBatchRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Users_GetUserAllShortenings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Shortener_GetUserAllShortenings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UserID)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersServer).GetUserAllShortenings(ctx, in)
+		return srv.(ShortenerServer).GetUserAllShortenings(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Users_GetUserAllShortenings_FullMethodName,
+		FullMethod: Shortener_GetUserAllShortenings_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersServer).GetUserAllShortenings(ctx, req.(*UserID))
+		return srv.(ShortenerServer).GetUserAllShortenings(ctx, req.(*UserID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Users_DeleteRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Shortener_DeleteRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteRecordRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersServer).DeleteRecord(ctx, in)
+		return srv.(ShortenerServer).DeleteRecord(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Users_DeleteRecord_FullMethodName,
+		FullMethod: Shortener_DeleteRecord_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersServer).DeleteRecord(ctx, req.(*DeleteRecordRequest))
+		return srv.(ShortenerServer).DeleteRecord(ctx, req.(*DeleteRecordRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Users_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Shortener_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(None)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(UsersServer).GetStats(ctx, in)
+		return srv.(ShortenerServer).GetStats(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Users_GetStats_FullMethodName,
+		FullMethod: Shortener_GetStats_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UsersServer).GetStats(ctx, req.(*None))
+		return srv.(ShortenerServer).GetStats(ctx, req.(*None))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Users_ServiceDesc is the grpc.ServiceDesc for Users service.
+// Shortener_ServiceDesc is the grpc.ServiceDesc for Shortener service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Users_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "shortener.Users",
-	HandlerType: (*UsersServer)(nil),
+var Shortener_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "shortener.Shortener",
+	HandlerType: (*ShortenerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "CreateShortening",
-			Handler:    _Users_CreateShortening_Handler,
+			Handler:    _Shortener_CreateShortening_Handler,
 		},
 		{
 			MethodName: "GetFullString",
-			Handler:    _Users_GetFullString_Handler,
+			Handler:    _Shortener_GetFullString_Handler,
 		},
 		{
 			MethodName: "CreateShorteningBatch",
-			Handler:    _Users_CreateShorteningBatch_Handler,
+			Handler:    _Shortener_CreateShorteningBatch_Handler,
 		},
 		{
 			MethodName: "GetUserAllShortenings",
-			Handler:    _Users_GetUserAllShortenings_Handler,
+			Handler:    _Shortener_GetUserAllShortenings_Handler,
 		},
 		{
 			MethodName: "DeleteRecord",
-			Handler:    _Users_DeleteRecord_Handler,
+			Handler:    _Shortener_DeleteRecord_Handler,
 		},
 		{
 			MethodName: "GetStats",
-			Handler:    _Users_GetStats_Handler,
+			Handler:    _Shortener_GetStats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

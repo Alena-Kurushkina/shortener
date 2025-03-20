@@ -33,3 +33,6 @@ var ErrTokenInvalid = errors.New("token is not valid")
 
 // ErrDBRecordDeleted defines error in case of requesting deleted shortening.
 var ErrDBRecordDeleted = errors.New("shortening is deleted")
+
+// ErrNoShortenings defines error in case of user shortenings in DB by user id.
+var ErrNoShortenings = errors.New("user has no shortenings")

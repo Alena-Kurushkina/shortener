@@ -3,109 +3,27 @@
 package api
 
 import (
-	"context"
+	context "context"
 	"encoding/json"
 	"errors"
 	"io"
-	"net"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	uuid "github.com/satori/go.uuid"
 
-	"github.com/Alena-Kurushkina/shortener/internal/config"
-	"github.com/Alena-Kurushkina/shortener/internal/generator"
+	"github.com/Alena-Kurushkina/shortener/internal/core"
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
 	"github.com/Alena-Kurushkina/shortener/internal/sherr"
-	"github.com/Alena-Kurushkina/shortener/internal/shortener"
 )
 
 const timeoutPing time.Duration = 30
 
-// Storager defines operations with data storage.
-type Storager interface {
-	Insert(ctx context.Context, userID uuid.UUID, key, value string) error
-	InsertBatch(_ context.Context, userID uuid.UUID, batch []BatchElement) error
-	Select(ctx context.Context, key string) (string, error)
-	SelectUserAll(ctx context.Context, userID uuid.UUID) ([]BatchElement, error)
-	DeleteRecords(ctx context.Context, deleteItems []DeleteItem) error
-	Ping(ctx context.Context) error
-	SelectStats(ctx context.Context) (stats *Stats, err error)
-	Close()
-}
-
-// A Shortener aggregates data storage, configurations and helpful objects.
+// A Shortener realises handlers.
 type Shortener struct {
-	repo       Storager
-	config     *config.Config
-	deleteChan chan DeleteItem
-	done       chan struct{}
-}
-
-func newShortenerObject(storage Storager, cfg *config.Config) *Shortener {
-	return &Shortener{
-		repo:       storage,
-		config:     cfg,
-		deleteChan: make(chan DeleteItem, 1024),
-		done:       make(chan struct{}),
-	}
-}
-
-// NewShortener returns new Shortener pointer initialized by repository and config.
-func NewShortener(storage Storager, cfg *config.Config) shortener.Handler {
-	shortener := newShortenerObject(storage, cfg)
-
-	go shortener.flushDeleteItems()
-
-	return shortener
-}
-
-// DeleteItem represents pair of ids which identify unique record to delete.
-type DeleteItem struct {
-	IDs    []string
-	UserID uuid.UUID
-}
-
-func (sh *Shortener) flushDeleteItems() {
-	ticker := time.NewTicker(1 * time.Second)
-
-	items := make([]DeleteItem, 0, 1024)
-
-	for {
-		select {
-		case msg := <-sh.deleteChan:
-			items = append(items, msg)
-		case <-ticker.C:
-			sh.deleteRecords(items)
-
-			items = make([]DeleteItem, 0, 1024)
-		case <-sh.done:
-			sh.deleteRecords(items)
-			return
-		}
-	}
-}
-
-func (sh *Shortener) deleteRecords(items []DeleteItem) {
-	if len(items) == 0 {
-		return
-	}
-	err := sh.repo.DeleteRecords(context.TODO(), items)
-	if err != nil {
-		logger.Log.Infof("Can't delete records", err.Error())
-		return
-	}
-	logger.Log.Info("Patch of shortenings was deleted, patch length: " + strconv.Itoa(len(items)))
-}
-
-// Shutdown finishes work gracefully
-func (sh *Shortener) Shutdown() {
-	logger.Log.Info("Start shortener shutdown")
-	close(sh.done)
-	sh.repo.Close()
+	Core *core.ShortenerCore
 }
 
 // CreateShortening habdle POST HTTP request with long URL in body and retrieves base URL with shortening.
@@ -141,9 +59,6 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 
 	logger.Log.Infof("Handle route /, method POST, body: %s", url)
 
-	// generate shortening
-	shortStr := generator.GenerateRandomString(15)
-
 	q := req.URL.Query()
 	id, err := uuid.FromString(q.Get("userUUID"))
 	if err != nil {
@@ -151,23 +66,24 @@ func (sh *Shortener) CreateShortening(res http.ResponseWriter, req *http.Request
 		return
 	}
 
-	insertErr := sh.repo.Insert(req.Context(), id, shortStr, url)
+	// generate shortening
+	shortStr, err := sh.Core.CreateShortening(req.Context(), id, url)
 
 	var existError *sherr.AlreadyExistError
-	if errors.As(insertErr, &existError) {
+	if errors.As(err, &existError) {
 		// make response
 		res.WriteHeader(http.StatusConflict)
-		res.Write([]byte(sh.config.BaseURL + existError.ExistShortStr))
-
+		res.Write([]byte(shortStr))
 		return
-	} else if insertErr != nil {
-		http.Error(res, insertErr.Error(), http.StatusBadRequest)
+	}
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// make response
 	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte(sh.config.BaseURL + shortStr))
+	res.Write([]byte(shortStr))
 }
 
 // A URLRequest is for request decoding from json.
@@ -216,47 +132,31 @@ func (sh *Shortener) CreateShorteningJSON(res http.ResponseWriter, req *http.Req
 	logger.Log.Infof("Handle route /api/shorten, method POST, body: %s", url.URL)
 
 	// generate shortening
-	shortStr := generator.GenerateRandomString(15)
-	insertErr := sh.repo.Insert(req.Context(), id, shortStr, url.URL)
-
-	var existError *sherr.AlreadyExistError
-	if errors.As(insertErr, &existError) {
-		// make response
-		responseData, err := json.Marshal(ResultResponse{
-			Result: sh.config.BaseURL + existError.ExistShortStr,
-		})
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		// make response
-		res.WriteHeader(http.StatusConflict)
-		res.Write(responseData)
-		//res.Write([]byte(sh.config.BaseURL + existError.ExistShortStr))
-
-		return
-	} else if insertErr != nil {
-		http.Error(res, insertErr.Error(), http.StatusBadRequest)
-		return
-	}
+	shortStr, insertErr := sh.Core.CreateShortening(req.Context(), id, url.URL)
 
 	// make response
 	responseData, err := json.Marshal(ResultResponse{
-		Result: sh.config.BaseURL + shortStr,
+		Result: shortStr,
 	})
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	var existError *sherr.AlreadyExistError
+	if errors.As(insertErr, &existError) {
+		// make response
+		res.WriteHeader(http.StatusConflict)
+		res.Write(responseData)
+		return
+	}
+	if insertErr != nil {
+		http.Error(res, insertErr.Error(), http.StatusBadRequest)
+		return
+	}
+
 	res.WriteHeader(http.StatusCreated)
 	res.Write(responseData)
-}
-
-// A BatchElement represent structure to marshal element of request`s json array.
-type BatchElement struct {
-	CorrelarionID string `json:"correlation_id"`
-	OriginalURL   string `json:"original_url"`
-	ShortURL      string `json:"short_url,omitempty"`
 }
 
 // CreateShorteningJSONBatch handle POST HTTP request with set of long URLs in body and retrieves set of shortenings.
@@ -275,7 +175,7 @@ func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *htt
 	}
 
 	// decode request body
-	batch := make([]BatchElement, 0, 10)
+	batch := make([]core.BatchElement, 0, 10)
 	if err := json.NewDecoder(req.Body).Decode(&batch); err != nil {
 		http.Error(res, "Can't read body", http.StatusBadRequest)
 		return
@@ -283,10 +183,6 @@ func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *htt
 	if len(batch) == 0 {
 		http.Error(res, "Body is empty", http.StatusBadRequest)
 		return
-	}
-	// generate shortening
-	for k := range batch {
-		batch[k].ShortURL = generator.GenerateRandomString(15)
 	}
 
 	q := req.URL.Query()
@@ -296,16 +192,8 @@ func (sh *Shortener) CreateShorteningJSONBatch(res http.ResponseWriter, req *htt
 		return
 	}
 
-	// write to data storage
-	if err = sh.repo.InsertBatch(req.Context(), id, batch); err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
-		return
-	}
+	batch, err = sh.Core.CreateShorteningBatch(req.Context(), id, batch)
 
-	// make response
-	for k, v := range batch {
-		batch[k].ShortURL = sh.config.BaseURL + v.ShortURL
-	}
 	responseData, err := json.Marshal(batch)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -328,7 +216,7 @@ func (sh *Shortener) GetFullString(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// get long URL from repository
-	repoOutput, err := sh.repo.Select(req.Context(), param)
+	repoOutput, err := sh.Core.GetFullString(req.Context(), param)
 	if err != nil {
 		if errors.Is(err, sherr.ErrDBRecordDeleted) {
 			http.Error(res, err.Error(), http.StatusGone)
@@ -357,19 +245,13 @@ func (sh *Shortener) GetUserAllShortenings(res http.ResponseWriter, req *http.Re
 	}
 
 	//get all user's long URL from repository
-	allRecords, err := sh.repo.SelectUserAll(req.Context(), id)
+	allRecords, err := sh.Core.GetAllUserShortenings(req.Context(), id)
 	if err != nil {
+		if errors.Is(err, sherr.ErrNoShortenings) {
+			http.Error(res, err.Error(), http.StatusNoContent)
+		}
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
-	} 
-
-	if len(allRecords) == 0 {
-		res.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	for k, v := range allRecords {
-		allRecords[k].ShortURL = sh.config.BaseURL + v.ShortURL
 	}
 
 	responseData, err := json.Marshal(allRecords)
@@ -415,7 +297,8 @@ func (sh *Shortener) DeleteRecordJSON(res http.ResponseWriter, req *http.Request
 		return
 	}
 
-	sh.deleteChan <- DeleteItem{IDs: recordIDs, UserID: id}
+	// sh.deleteChan <- DeleteItem{IDs: recordIDs, UserID: id}
+	sh.Core.RegisterToDelete(req.Context(), recordIDs, id)
 
 	logger.Log.Info("Shortenings' ids were send to chan for deletion")
 
@@ -425,10 +308,9 @@ func (sh *Shortener) DeleteRecordJSON(res http.ResponseWriter, req *http.Request
 
 // PingDB check connection to data storage.
 func (sh *Shortener) PingDB(res http.ResponseWriter, req *http.Request) {
-
 	ctx, cancel := context.WithTimeout(req.Context(), timeoutPing*time.Second)
 	defer cancel()
-	if err := sh.repo.Ping(ctx); err != nil {
+	if err := sh.Core.PingDB(ctx); err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -437,32 +319,24 @@ func (sh *Shortener) PingDB(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
-type Stats struct {
-	URLs int `json:"urls"`
-	Users int `json:"users"`
-}
-
 // GetStats handle GET request with no parameters and makes response with
 // number of shorten URLs and users number.
 // get /api/internal/stats
 func (sh *Shortener) GetStats(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 
-	_, ipNetTr, err:=net.ParseCIDR(sh.config.TrustedSubnet)
-	if err !=nil{
+	ipStr := req.Header.Get("X-Real-IP")
+	trusted, err := sh.Core.IsTrustedSubnet(ipStr)
+	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	ipStr := req.Header.Get("X-Real-IP")
-	subnet:=net.ParseIP(ipStr).Mask(ipNetTr.Mask)
-
-	if !subnet.Equal(ipNetTr.IP) || sh.config.TrustedSubnet == ""{
+	if !trusted {
 		res.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	stats, err := sh.repo.SelectStats(req.Context())
+	stats, err := sh.Core.GetStats(req.Context())
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return

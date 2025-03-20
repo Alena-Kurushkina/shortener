@@ -8,18 +8,17 @@ message UserID {
   string user_id = 1;
 }
 
-message Error {
-    string error = 1;
-}
-
 message CreateShorteningRequest {
-  UserID user_id = 1;
+  string user_id = 1;
   string long_url = 2;
 }
 
 message ShorteningResponse {
-  Error error = 1;
   string shortening = 2;
+}
+
+message LongURLResponse {
+  string long_url = 2;
 }
 
 message CreateShorteningBatchRequest {
@@ -27,7 +26,7 @@ message CreateShorteningBatchRequest {
     string correlation_id = 1;
     string long_url = 2;    
   }
-  UserID user_id = 1;
+  string user_id = 1;
   repeated BatchRequest url_batch = 2;
 }
 
@@ -37,7 +36,6 @@ message ShorteningBatchResponse {
     string long_url = 2; 
     string short_url = 3;
   }
-  Error error = 1;
   repeated BatchResponse url_batch = 2;
 }
 
@@ -50,18 +48,17 @@ message DeleteRecordRequest {
 }
 
 message GetStatsResponse {
-  Error error = 1;
   int32 urls_count = 2;
   int32 users_count = 3;
 }
 
 message None{}
 
-service Users {
+service Shortener {
   rpc CreateShortening(CreateShorteningRequest) returns (ShorteningResponse);
-  rpc GetFullString(LongURLRequest) returns (ShorteningResponse);
+  rpc GetFullString(LongURLRequest) returns (LongURLResponse);
   rpc CreateShorteningBatch(CreateShorteningBatchRequest) returns (ShorteningBatchResponse);
   rpc GetUserAllShortenings(UserID) returns (ShorteningBatchResponse);
-  rpc DeleteRecord(DeleteRecordRequest) returns (Error);
+  rpc DeleteRecord(DeleteRecordRequest) returns (None);
   rpc GetStats(None) returns (GetStatsResponse);
 } 

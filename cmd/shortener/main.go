@@ -1,16 +1,18 @@
 // Shortener is a service that accepts and stores long urls and serves requests for corresponding shortenings
-
 package main
 
 import (
 	"context"
 	"fmt"
 	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
 
 	_ "github.com/golang/mock/mockgen/model"
 
-	"github.com/Alena-Kurushkina/shortener/internal/api"
 	"github.com/Alena-Kurushkina/shortener/internal/config"
+	"github.com/Alena-Kurushkina/shortener/internal/core"
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
 	"github.com/Alena-Kurushkina/shortener/internal/repository"
 	"github.com/Alena-Kurushkina/shortener/internal/shortener"
@@ -40,11 +42,41 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer repo.Close()
+	//defer repo.Close() //done in shutdown
 
-	sh := api.NewShortener(repo, cfg)
+	// через него сообщаем основному потоку, что все сетевые соединения обработаны и закрыты
+	idleConnsClosed := make(chan struct{})
 
-	server := shortener.NewServer(sh, cfg)
+	core := core.NewShortenerCore(repo, cfg)
 
-	server.Run()
+	// sh := api.NewShortener(core)
+	httpServer := shortener.NewServer(core, cfg, idleConnsClosed)
+	rpcServer := shortener.NewServerGRPC(core, cfg, idleConnsClosed)
+
+	// канал для перенаправления прерываний
+	sigint := make(chan os.Signal, 1)
+	// регистрируем перенаправление прерываний
+	signal.Notify(sigint, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	// запускаем горутину обработки пойманных прерываний
+	go func() {
+		// читаем из канала прерываний
+		<-sigint
+		// запускаем процедуру graceful shutdown
+		if err := httpServer.HTTPServer.Shutdown(context.Background()); err != nil {
+			// ошибки закрытия Listener
+			logger.Log.Errorf("HTTP server Shutdown: %v", err)
+		}
+		logger.Log.Info("HTTP server shutdown seccussfully")
+
+		rpcServer.Server.GracefulStop()
+		logger.Log.Info("gRPC server was stopped seccussfully")
+
+		// сообщаем основному потоку, что все сетевые соединения обработаны и закрыты
+		close(idleConnsClosed)
+
+		core.Shutdown()
+	}()
+
+	go httpServer.Run()
+	rpcServer.Run()
 }

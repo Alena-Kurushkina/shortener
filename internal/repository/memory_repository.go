@@ -6,7 +6,7 @@ import (
 
 	uuid "github.com/satori/go.uuid"
 
-	"github.com/Alena-Kurushkina/shortener/internal/api"
+	"github.com/Alena-Kurushkina/shortener/internal/core"
 )
 
 // A MemoryRepository represents a memory data storage.
@@ -15,7 +15,7 @@ type MemoryRepository struct {
 }
 
 // newMemoryRepository initializes data storage in memory.
-func newMemoryRepository() (api.Storager, error) {
+func newMemoryRepository() (core.Storager, error) {
 	db := MemoryRepository{
 		db: make(map[string]string),
 	}
@@ -30,7 +30,7 @@ func (r MemoryRepository) Insert(_ context.Context, id uuid.UUID, key, value str
 }
 
 // InsertBatch adds array of data to storage.
-func (r MemoryRepository) InsertBatch(_ context.Context, id uuid.UUID, batch []api.BatchElement) error {
+func (r MemoryRepository) InsertBatch(_ context.Context, id uuid.UUID, batch []core.BatchElement) error {
 	for _, v := range batch {
 		r.db[v.ShortURL] = v.OriginalURL
 	}
@@ -47,12 +47,12 @@ func (r MemoryRepository) Select(_ context.Context, key string) (string, error) 
 }
 
 // SelectUserAll returns data from storage.
-func (r MemoryRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]api.BatchElement, error) {
-	return []api.BatchElement{}, nil
+func (r MemoryRepository) SelectUserAll(ctx context.Context, id uuid.UUID) ([]core.BatchElement, error) {
+	return []core.BatchElement{}, nil
 }
 
 // DeleteRecords delete data from storage.
-func (r MemoryRepository) DeleteRecords(ctx context.Context, deleteItems []api.DeleteItem) error {
+func (r MemoryRepository) DeleteRecords(ctx context.Context, deleteItems []core.DeleteItem) error {
 	return nil
 }
 
@@ -62,6 +62,6 @@ func (r *MemoryRepository) Close() {}
 // Ping satisfies the interface.
 func (r *MemoryRepository) Ping(_ context.Context) error { return nil }
 
-func (r *MemoryRepository) SelectStats(ctx context.Context) (stats *api.Stats, err error){
+func (r *MemoryRepository) SelectStats(ctx context.Context) (stats *core.Stats, err error) {
 	return nil, nil
 }
