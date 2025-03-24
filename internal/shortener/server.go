@@ -3,19 +3,17 @@
 package shortener
 
 import (
-	"context"
 	"net/http"
 	"net/http/pprof"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/acme/autocert"
 
+	"github.com/Alena-Kurushkina/shortener/internal/api"
 	"github.com/Alena-Kurushkina/shortener/internal/authenticator"
 	"github.com/Alena-Kurushkina/shortener/internal/compress"
 	"github.com/Alena-Kurushkina/shortener/internal/config"
+	"github.com/Alena-Kurushkina/shortener/internal/core"
 	"github.com/Alena-Kurushkina/shortener/internal/logger"
 )
 
@@ -28,7 +26,8 @@ type Handler interface {
 	PingDB(res http.ResponseWriter, req *http.Request)
 	GetUserAllShortenings(res http.ResponseWriter, req *http.Request)
 	DeleteRecordJSON(res http.ResponseWriter, req *http.Request)
-	Shutdown()
+	GetStats(res http.ResponseWriter, req *http.Request)
+	//Shutdown()
 }
 
 // A Server aggregates handler and config.
@@ -46,6 +45,8 @@ func newRouter(hi Handler) chi.Router {
 
 	r.Get("/ping", hi.PingDB)
 	r.Get("/{id}", hi.GetFullString)
+
+	r.Get("/api/internal/stats", hi.GetStats)
 
 	r.Get("/debug/pprof/", pprof.Index)
 	r.Get("/debug/pprof/profile", pprof.Profile)
@@ -66,35 +67,20 @@ func newRouter(hi Handler) chi.Router {
 }
 
 // NewServer initializes new server with config and handler.
-func NewServer(hdl Handler, cfg *config.Config) *Server {
+func NewServer(core *core.ShortenerCore, cfg *config.Config, idleConnsChan chan struct{}) *Server {
+	hdl := api.Shortener{
+		Core: core,
+	}
+
 	srv := &Server{
-		//Handler: newRouter(hdl),
 		HTTPServer: http.Server{
-			Handler: newRouter(hdl),
+			Handler: newRouter(&hdl),
 			Addr:    cfg.ServerAddress,
 		},
-		Config:    cfg,
-		Shortener: hdl,
+		Config: cfg,		
 		// через этот канал сообщим основному потоку, что соединения закрыты
-		IdleConnsClosed: make(chan struct{}),
+		IdleConnsClosed: idleConnsChan,
 	}
-	// канал для перенаправления прерываний
-	sigint := make(chan os.Signal, 1)
-	// регистрируем перенаправление прерываний
-	signal.Notify(sigint, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
-	// запускаем горутину обработки пойманных прерываний
-	go func() {
-		// читаем из канала прерываний
-		<-sigint
-		// запускаем процедуру graceful shutdown
-		if err := srv.HTTPServer.Shutdown(context.Background()); err != nil {
-			// ошибки закрытия Listener
-			logger.Log.Errorf("HTTP server Shutdown: %v", err)
-		}
-		logger.Log.Info("HTTP server shutdown seccussfully")
-		// сообщаем основному потоку, что все сетевые соединения обработаны и закрыты
-		close(srv.IdleConnsClosed)
-	}()
 
 	return srv
 }
@@ -130,6 +116,6 @@ func (s *Server) Run() {
 	// получили оповещение о завершении
 	// здесь можно освобождать ресурсы перед выходом,
 	// например закрыть соединение с базой данных
-	s.Shortener.Shutdown()
+	//s.Shortener.Shutdown()
 	logger.Log.Info("Server Shutdown gracefully")
 }
