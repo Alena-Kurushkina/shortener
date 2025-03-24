@@ -44,7 +44,7 @@ func main() {
 		panic(err)
 	}
 
-	// через него сообщаем основному потоку, что все сетевые соединения обработаны и закрыты
+	// через канал сообщаем основному потоку, что все сетевые соединения обработаны и закрыты
 	idleConnsClosed := make(chan struct{})
 
 	core := core.NewShortenerCore(repo, cfg)
@@ -52,6 +52,14 @@ func main() {
 	httpServer := shortener.NewServer(core, cfg, idleConnsClosed)
 	rpcServer := shortener.NewServerGRPC(core, cfg, idleConnsClosed)
 
+	// setup servers graceful shutdown by signals
+	setupShutdown(idleConnsClosed, core, httpServer, rpcServer)
+
+	go httpServer.Run()
+	rpcServer.Run()
+}
+
+func setupShutdown(idleConnsClosed chan struct{}, core *core.ShortenerCore, httpServer *shortener.Server, rpcServer *shortener.ServerGRPC){
 	// канал для перенаправления прерываний
 	sigint := make(chan os.Signal, 1)
 	// регистрируем перенаправление прерываний
@@ -61,7 +69,8 @@ func main() {
 		// читаем из канала прерываний
 		<-sigint
 		// запускаем процедуру graceful shutdown
-		ctx, _:=context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel:=context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 		if err := httpServer.HTTPServer.Shutdown(ctx); err != nil {
 			// ошибки закрытия Listener
 			logger.Log.Errorf("HTTP server Shutdown: %v", err)
@@ -76,7 +85,4 @@ func main() {
 
 		core.Shutdown()
 	}()
-
-	go httpServer.Run()
-	rpcServer.Run()
 }

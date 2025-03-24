@@ -25,7 +25,7 @@ type claims struct {
 }
 
 const tokenExp = time.Hour * 3
-
+//TODO: перенести в env
 const secretKey = "secretkey"
 
 // buildJWTString makes token and returns it as a string.

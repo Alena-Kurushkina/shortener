@@ -253,7 +253,7 @@ type claims struct {
 
 const tokenExp = time.Hour * 3
 
-// TODO перенести в env
+// TODO: перенести в env
 const secretKey = "secretkey"
 
 func buildJWTString(id uuid.UUID) (string, error) {
